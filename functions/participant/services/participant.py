@@ -1,6 +1,6 @@
 from ..repositories.participant import ParticipantRepository
 from ..schemas.event import GetParticipantsParams
-from ..schemas.participant import GetParticipantsResult
+from ..schemas.participant import GetDetailParticipantResult, GetParticipantsResult
 
 
 class ParticipantService:
@@ -15,3 +15,11 @@ class ParticipantService:
         total_data = self.repo.get_total_data_participants()
 
         return GetParticipantsResult(participants=participants, total_data=total_data)
+
+    def get_detail(self) -> GetDetailParticipantResult:
+
+        participant = self.repo.get_detail_participant()
+        if not participant:
+            return GetDetailParticipantResult(participant={}, documents=[])
+
+        return GetDetailParticipantResult(participant=participant, documents=[])

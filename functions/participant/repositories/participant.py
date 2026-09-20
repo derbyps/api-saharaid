@@ -4,7 +4,7 @@ from shared.configs.db import db
 from shared.models.participant import Participant
 from shared.util import serialize
 
-from ..schemas.participant import ParticipantRow
+from ..schemas.participant import DetailParticipantRow, ParticipantRow
 
 # JAKARTA = ZoneInfo("Asia/Jakarta")
 # PROFILE_FIELDS = (
@@ -80,6 +80,19 @@ class ParticipantRepository:
         )
 
         return total_data
+
+    def get_detail_participant(self) -> DetailParticipantRow | None:
+
+        participant = serialize(
+            db.session.execute(
+                select(Participant)
+                .select_from(Participant)
+                .where(Participant.is_deleted.is_(False))
+            ).first(),
+            DetailParticipantRow,
+        )
+
+        return participant
 
     # def create_participant(self, values: dict, user_id: UUID) -> dict:
     #     participant = Participant(**values, created_by=user_id)
