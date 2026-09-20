@@ -1,3 +1,5 @@
+from shared.exception import NotFound
+
 from ..repositories.participant import ParticipantRepository
 from ..schemas.event import GetParticipantsParams
 from ..schemas.participant import GetDetailParticipantResult, GetParticipantsResult
@@ -20,6 +22,6 @@ class ParticipantService:
 
         participant = self.repo.get_detail_participant()
         if not participant:
-            return GetDetailParticipantResult(participant={}, documents=[])
+            raise NotFound("PARTICIPANT_NOT_FOUND")
 
         return GetDetailParticipantResult(participant=participant, documents=[])
