@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from shared.configs.db import db
 from shared.models.participant import Participant
@@ -46,14 +46,40 @@ class ParticipantRepository:
     def get_participants(self, offset: int, limit: int) -> list[ParticipantRow]:
 
         query = (
-            select(Participant)
+            select(
+                Participant.id,
+                Participant.serial_number,
+                Participant.name,
+                Participant.phone_number,
+                Participant.email,
+                Participant.created_at,
+            )
             .select_from(Participant)
             .where(Participant.is_deleted.is_(False))
             .limit(limit)
             .offset(offset)
         )
 
-        return serialize(db.session.execute(query).all(), ParticipantRow)
+        participants = serialize(db.session.execute(query).all(), ParticipantRow)
+
+        return participants
+
+    def get_total_data_participants(self) -> int:
+
+        total_data = (
+            db.session.scalars(
+                select(func.COUNT()).select_from(
+                    (
+                        select(Participant)
+                        .select_from(Participant)
+                        .where(Participant.is_deleted.is_(False))
+                    ).subquery()
+                )
+            ).first()
+            or 0
+        )
+
+        return total_data
 
     # def create_participant(self, values: dict, user_id: UUID) -> dict:
     #     participant = Participant(**values, created_by=user_id)

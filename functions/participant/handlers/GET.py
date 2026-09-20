@@ -12,15 +12,6 @@ def get_participants_handler(event: dict) -> dict:
     service = ParticipantService()
     result = service.get_list(params)
 
-    response = PaginatedParticipantsResponse(
-        participants=result["participants"],
-        metadata={
-            "p": params.get("p") or 1,
-            "rp": params.get("rp") or 25,
-            "total_data": result["total_data"],
-        },
-    )
-
     response: PaginatedParticipantsResponse = {
         "participants": result["participants"],
         "metadata": {
