@@ -1,0 +1,60 @@
+service: saharaid-backoffice
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: python3.12
+  architecture: x86_64
+  region: ${env:AWS_REGION}
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+  vpc:
+    securityGroupIds:
+      - ${env:LAMBDA_SECURITY_GROUP_ID}
+    subnetIds:
+      - ${env:PRIVATE_SUBNET_ID_1}
+      - ${env:PRIVATE_SUBNET_ID_2}
+  httpApi:
+    authorizers:
+      cognito:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${aws:region}.amazonaws.com/${env:COGNITO_USER_POOL_ID}
+        audience:
+          - ${env:COGNITO_APP_CLIENT_ID}
+
+functions:
+  participant:
+    handler: functions/participant/lambda_function.lambda_handler
+    # ponytail: direct RDS connections; raise this only with database connection capacity.
+    reservedConcurrency: ${env:PARTICIPANT_RESERVED_CONCURRENCY, 5}
+    events:
+      - httpApi:
+          path: /participant
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /participant
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /participant
+          method: put
+          authorizer:
+            name: cognito
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    dockerRunCmdExtraArgs:
+      - --platform
+      - linux/amd64
+
+package:
+  patterns:
+    - '!.venv/**'
+    - '!_docs/**'
+    - '!migrations/**'
+    - '!tests/**'
