@@ -1,6 +1,7 @@
 from shared import util
 
 from ..schemas.event import GetParticipantsParams
+from ..schemas.participant import GetDetailParticipantResult
 from ..schemas.response import PaginatedParticipantsResponse
 from ..services.participant import ParticipantService
 
@@ -26,4 +27,12 @@ def get_participants_handler(event: dict) -> dict:
 
 def get_participant_detail_handler(event: dict) -> dict:
 
-    return util.return_response(200, {})
+    service = ParticipantService()
+    result = service.get_detail()
+
+    response: GetDetailParticipantResult = {
+        "participant": result["participant"],
+        "documents": result["documents"],
+    }
+
+    return util.return_response(200, dict(response))
