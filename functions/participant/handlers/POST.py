@@ -1,10 +1,9 @@
 import json
-import uuid
 
 from shared import util
-from shared.configs.config import config
-from shared.configs.db import db
-from shared.models.participant import Participant
+
+from ..schemas.participant import DetailParticipantRow
+from ..services.participant import ParticipantService
 
 
 def create_participant_handler(event: dict) -> dict:
@@ -27,27 +26,24 @@ def create_participant_handler(event: dict) -> dict:
         if item not in body:
             return util.return_response(422, {})
 
-    participant = Participant(
-        id=uuid.uuid4(),
-        name=body["name"],
-        identity_number=body["identity_number"],
-        gender=body["gender"],
-        phone_number=body["phone_number"],
-        email=body["email"],
-        date_of_birth=body["date_of_birth"],
-        religion=body["religion"],
-        address=body["address"],
-        job_position=body["job_position"],
-        job_company=body["job_company"],
-        education=body["education"],
-        cr_number=body["cr_number"],
-        tax_number=body["tax_number"],
-        serial_number=body["serial_number"],
-        created_at=config.TIMESTAMP,
-        created_by=config.USER_ID,
-    )
+    service = ParticipantService()
+    result = service.create(body)
+    response: DetailParticipantRow = {
+        "id": str(result.id),
+        "name": result.name,
+        "identity_number": result.identity_number,
+        "gender": result.gender,
+        "phone_number": result.phone_number,
+        "email": result.email,
+        "date_of_birth": result.date_of_birth,
+        "religion": result.religion,
+        "address": result.address,
+        "job_position": result.job_position,
+        "job_company": result.job_company,
+        "education": result.education,
+        "cr_number": result.cr_number,
+        "tax_number": result.tax_number,
+        "serial_number": result.serial_number,
+    }
 
-    db.save(participant)
-    db.commit()
-
-    return util.return_response(201, {})
+    return util.return_response(201, dict(response))

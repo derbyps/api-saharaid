@@ -8,7 +8,7 @@ from shared.models.user import User
 from .db import db
 
 TIMESTAMP = datetime.now(timezone("Asia/Makassar")).strftime("%Y-%m-%d %H:%M:%S")
-USER_ID = 0
+USER_ID = ""
 
 
 class Base(DeclarativeBase):

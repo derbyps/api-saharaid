@@ -1,7 +1,8 @@
-from datetime import date, datetime
 from uuid import UUID
 
+import uuid_extensions
 from sqlalchemy import (
+    BINARY,
     BigInteger,
     Boolean,
     Date,
@@ -21,15 +22,17 @@ from shared.configs.db import Base, db
 class Participant(Base):
     __tablename__ = "participants"
 
-    id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    id: Mapped[bytes] = mapped_column(
+        BINARY(16),
+        primary_key=True,
+        default=lambda: uuid_extensions.uuid7(as_type="bytes"),
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     identity_number: Mapped[str] = mapped_column(Text, nullable=False)
     gender: Mapped[str] = mapped_column(Text, nullable=False)
     phone_number: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
-    date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
+    date_of_birth: Mapped[str] = mapped_column(Date, nullable=False)
     religion: Mapped[str] = mapped_column(Text, nullable=False)
     address: Mapped[str] = mapped_column(Text, nullable=False)
     job_position: Mapped[str] = mapped_column(Text, nullable=False)
@@ -43,21 +46,21 @@ class Participant(Base):
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deleted_at: Mapped[str | None] = mapped_column(DateTime(timezone=True))
     deleted_by: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("public.users.id")
     )
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[str] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     created_by: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False
     )
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[str | None] = mapped_column(DateTime(timezone=True))
     updated_by: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("public.users.id")
     )
 
     @classmethod
-    def get_detail(cls, participant_id: UUID) -> "Participant | None":
+    def get_detail(cls, participant_id: str) -> "Participant | None":
         return db.session.get(cls, participant_id)

@@ -26,9 +26,12 @@ def get_participants_handler(event: dict) -> dict:
 
 
 def get_participant_detail_handler(event: dict) -> dict:
+    participant_id = (event.get("pathParameters") or {}).get("id")
+    if not participant_id:
+        return util.return_response(400, {})
 
     service = ParticipantService()
-    result = service.get_detail()
+    result = service.get_detail(participant_id)
 
     response: GetDetailParticipantResult = {
         "participant": result["participant"],

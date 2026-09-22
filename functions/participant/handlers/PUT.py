@@ -1,10 +1,9 @@
 import json
-import uuid
 
 from shared import util
-from shared.configs.config import config
-from shared.configs.db import db
-from shared.models.participant import Participant
+
+from ..schemas.participant import DetailParticipantRow
+from ..services.participant import ParticipantService
 
 
 def update_participant_handler(event: dict) -> dict:
@@ -31,23 +30,24 @@ def update_participant_handler(event: dict) -> dict:
         if item not in body:
             return util.return_response(422, {})
 
-    participant = Participant.get_detail(participant_id)
-    if not participant:
-        return util.return_response(404, {})
+    service = ParticipantService()
+    result = service.create(body)
+    response: DetailParticipantRow = {
+        "id": str(result.id),
+        "name": result.name,
+        "identity_number": result.identity_number,
+        "gender": result.gender,
+        "phone_number": result.phone_number,
+        "email": result.email,
+        "date_of_birth": result.date_of_birth,
+        "religion": result.religion,
+        "address": result.address,
+        "job_position": result.job_position,
+        "job_company": result.job_company,
+        "education": result.education,
+        "cr_number": result.cr_number,
+        "tax_number": result.tax_number,
+        "serial_number": result.serial_number,
+    }
 
-    participant.name = body["name"]
-    participant.identity_number = body["identity_number"]
-    participant.gender = body["gender"]
-    participant.phone_number = body["phone_number"]
-    participant.email = body["email"]
-    participant.date_of_birth = body["date_of_birth"]
-    participant.religion = body["religion"]
-    participant.address = body["address"]
-    participant.job_position = body["job_position"]
-    participant.job_company = body["job_company"]
-    participant.education = body["education"]
-    participant.cr_number = body["cr_number"]
-
-    db.commit()
-
-    return util.return_response(201, {})
+    return util.return_response(201, dict(response))
