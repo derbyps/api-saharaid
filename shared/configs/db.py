@@ -2,7 +2,14 @@ import os
 from functools import lru_cache
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine.interfaces import DBAPICursor
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+CONNECTION = None
+CURSOR: DBAPICursor | None = None
+
+connection = None
+cursor: DBAPICursor | None = None
 
 
 class Base(DeclarativeBase):
@@ -42,6 +49,28 @@ class Database:
             self._session.rollback()
             self._session.close()
             self._session = None
+
+    def commit(self) -> None:
+        if self._session is not None:
+            self._session.commit()
+
+    def save(self, instance: object) -> None:
+        if self._session is not None:
+            self._session.add(instance)
+            self._session.flush()
+
+    def init(self) -> None:
+        global CONNECTION, CURSOR, connection, cursor
+
+        try:
+            CONNECTION = self.session.connection().connection
+        except:
+            self.session.rollback()
+            CONNECTION = self.session.connection().connection
+
+        CURSOR = CONNECTION.cursor()
+        connection = CONNECTION
+        cursor = CURSOR
 
 
 db = Database()
