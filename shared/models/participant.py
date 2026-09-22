@@ -15,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from shared.configs.db import Base
+from shared.configs.db import Base, db
 
 
 class Participant(Base):
@@ -57,3 +57,7 @@ class Participant(Base):
     updated_by: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("public.users.id")
     )
+
+    @classmethod
+    def get_detail(cls, participant_id: UUID) -> "Participant | None":
+        return db.session.get(cls, participant_id)

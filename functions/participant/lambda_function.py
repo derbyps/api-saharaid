@@ -2,9 +2,8 @@ from shared import util
 from shared.decorators.error_handling import handle_errors
 
 from .handlers.GET import get_participant_detail_handler, get_participants_handler
-from .handlers.POST import post_method_handler
-
-# from .handlers.PUT import update_participant_handler
+from .handlers.POST import create_participant_handler
+from .handlers.PUT import update_participant_handler
 
 
 @handle_errors
@@ -18,9 +17,9 @@ def lambda_handler(event, _):
         return get_participants_handler(event)
 
     if method == "POST":
-        return post_method_handler(event)
+        return create_participant_handler(event)
 
-    # if method == "PUT":
-    #     return update_participant_handler(event)
+    if method == "PUT":
+        return update_participant_handler(event)
 
     raise util.HttpError(405, "METHOD_NOT_ALLOWED", "Method not allowed")

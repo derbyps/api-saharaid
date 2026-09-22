@@ -7,7 +7,7 @@ from shared.configs.db import db
 from shared.models.participant import Participant
 
 
-def post_method_handler(event: dict) -> dict:
+def create_participant_handler(event: dict) -> dict:
     body = json.loads(event.get("body") or "{}")
     req_body = [
         "name",
