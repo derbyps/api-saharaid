@@ -1,8 +1,6 @@
 from uuid import UUID
 
-import uuid_extensions
 from sqlalchemy import (
-    BINARY,
     BigInteger,
     Boolean,
     Date,
@@ -22,10 +20,10 @@ from shared.configs.db import Base, db
 class Participant(Base):
     __tablename__ = "participants"
 
-    id: Mapped[bytes] = mapped_column(
-        BINARY(16),
+    id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
         primary_key=True,
-        default=lambda: uuid_extensions.uuid7(as_type="bytes"),
+        server_default=text("gen_random_uuid()"),
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     identity_number: Mapped[str] = mapped_column(Text, nullable=False)
