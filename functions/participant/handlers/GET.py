@@ -1,7 +1,10 @@
 from shared import util
 
 from ..schemas.event import GetParticipantsParams
-from ..schemas.response import GetDetailParticipantResponse, PaginatedParticipantsResponse
+from ..schemas.response import (
+    GetDetailParticipantResponse,
+    PaginatedParticipantsResponse,
+)
 from ..services.participant import ParticipantService
 
 

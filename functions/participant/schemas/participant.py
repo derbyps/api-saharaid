@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from functions.documents.schemas.document import DocumentMetadataRow
 
@@ -33,8 +33,8 @@ class DetailParticipantRow(TypedDict):
     cr_number: str
     tax_number: str
     serial_number: int
-    created_at: str
-    updated_at: str | None
+    created_at: NotRequired[str]
+    updated_at: NotRequired[str | None]
 
 
 class GetDetailParticipantResult(TypedDict):

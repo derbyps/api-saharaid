@@ -31,7 +31,7 @@ def update_participant_handler(event: dict) -> dict:
             return util.return_response(422, {})
 
     service = ParticipantService()
-    result = service.create(body)
+    result = service.update(participant_id, body)
     response: DetailParticipantRow = {
         "id": str(result.id),
         "name": result.name,

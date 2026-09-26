@@ -1,6 +1,3 @@
-import json
-import uuid
-
 from shared import util
 from shared.configs.config import config
 from shared.configs.db import db
