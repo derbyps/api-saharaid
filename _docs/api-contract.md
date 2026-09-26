@@ -260,10 +260,26 @@ The list never contains documents or signed URLs.
 
 Success — `200`:
 
-```ts
+```json
 {
-  participant: Participant;
-  documents: DocumentMetadata[];
+  participant: {
+    "id": str,
+    "name": str,
+    "identity_number": str,
+    "gender": str,
+    "phone_number": str,
+    "email": str,
+    "date_of_birth": str,
+    "religion": str,
+    "address": str,
+    "job_position": str,
+    "job_company": str,
+    "education": str,
+    "cr_number": str,
+    "tax_number": str,
+    "serial_number": int,
+  },
+  documents: DocumentMetadata[],
 }
 ```
 
