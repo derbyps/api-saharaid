@@ -755,7 +755,29 @@ Adds all selected active participants in one database operation. Any invalid par
 
 Enrollment removal is handled by `PUT /schedule?id={uuid}` with `deleted_participant_ids`.
 
-## 12. File constraints
+## 12. Dashboard
+GET `/statistic`
+
+```
+{
+  "number_stats": {
+    "participant": 100,
+    "instructor": 200,
+  },
+  "chart_stats": {
+    "participant_certificate": [
+      {
+        "period": "2025-05",
+        "participant": 190,
+        "certificate": 200
+      },
+      ... (last 5 months from now ASC)
+    ]
+  }
+}
+```
+
+## 13. File constraints
 
 ### Participant documents
 
