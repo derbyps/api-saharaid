@@ -175,6 +175,8 @@ vscode/
 
 # serverless build
 .serverless
+node_modules/
+.requirements/
 layers/*/.serverless
 
 .env.local.json
