@@ -1,18 +1,15 @@
-from datetime import date, datetime
-from uuid import UUID
-
+import uuid_extensions
 from sqlalchemy import (
+    BINARY,
     BigInteger,
     Boolean,
     Date,
     DateTime,
-    ForeignKey,
     Identity,
     Text,
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.configs.db import Base, db
@@ -22,10 +19,10 @@ class Participant(Base):
     __tablename__ = "participants"
     __table_args__ = {"schema": "public"}
 
-    id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True),
+    id: Mapped[bytes] = mapped_column(
+        BINARY(16),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=lambda: uuid_extensions.uuid7(as_type="bytes"),
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     identity_number: Mapped[str] = mapped_column(Text, nullable=False)
@@ -47,19 +44,13 @@ class Participant(Base):
         Boolean, nullable=False, server_default=text("false")
     )
     deleted_at: Mapped[str | None] = mapped_column(DateTime(timezone=True))
-    deleted_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("public.users.id")
-    )
+    deleted_by: Mapped[bytes | None] = mapped_column(BINARY)
     created_at: Mapped[str] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    created_by: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False
-    )
+    created_by: Mapped[bytes] = mapped_column(BINARY)
     updated_at: Mapped[str | None] = mapped_column(DateTime(timezone=True))
-    updated_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("public.users.id")
-    )
+    updated_by: Mapped[bytes | None] = mapped_column(BINARY)
 
     @classmethod
     def get_detail(cls, participant_id: str) -> "Participant | None":
