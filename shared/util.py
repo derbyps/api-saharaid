@@ -43,6 +43,16 @@ def return_response(status: int, data: dict) -> dict:
     }
 
 
+def parse_body(event: dict) -> dict:
+    try:
+        body = json.loads(event.get("body") or "{}")
+    except (TypeError, ValueError) as exc:
+        raise HttpError(400, "INVALID_BODY", "Request body must be valid JSON") from exc
+    if not isinstance(body, dict):
+        raise HttpError(400, "INVALID_BODY", "Request body must be a JSON object")
+    return body
+
+
 @lru_cache(maxsize=1)
 def _cognito():
     import boto3

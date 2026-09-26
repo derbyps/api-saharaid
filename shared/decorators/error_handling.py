@@ -2,6 +2,7 @@ from functools import wraps
 
 from shared import util
 from shared.configs.db import db
+from shared.schemas.response import ErrorResponse
 from shared.exception import (
     AppException,
     BadRequest,
@@ -18,6 +19,11 @@ from shared.exception import (
 )
 
 
+def _error_response(status: int, code: str, message: str) -> dict:
+    response: ErrorResponse = {"error": message, "errCode": code}
+    return util.return_response(status, response)
+
+
 def handle_errors(handler):
     @wraps(handler)
     def wrapped(event, context):
@@ -25,50 +31,46 @@ def handle_errors(handler):
         try:
             return handler(event, context)
         except util.HttpError as exc:
-            return util.return_response(
-                exc.status, {"error": str(exc), "errCode": exc.code}
-            )
+            return _error_response(exc.status, exc.code, str(exc))
 
         except BadRequest as exc:
-            return util.return_response(400, {"error": str(exc), "errCode": exc.code})
+            return _error_response(400, exc.code, str(exc))
 
         except Unauthorized as exc:
-            return util.return_response(401, {"error": str(exc), "errCode": exc.code})
+            return _error_response(401, exc.code, str(exc))
 
         except Forbidden as exc:
-            return util.return_response(403, {"error": str(exc), "errCode": exc.code})
+            return _error_response(403, exc.code, str(exc))
 
         except NotFound as exc:
-            return util.return_response(404, {"error": str(exc), "errCode": exc.code})
+            return _error_response(404, exc.code, str(exc))
 
         except MethodNotImplemented as exc:
-            return util.return_response(405, {"error": str(exc), "errCode": exc.code})
+            return _error_response(405, exc.code, str(exc))
 
         except NotAcceptable as exc:
-            return util.return_response(406, {"error": str(exc), "errCode": exc.code})
+            return _error_response(406, exc.code, str(exc))
 
         except Conflict as exc:
-            return util.return_response(409, {"error": str(exc), "errCode": exc.code})
+            return _error_response(409, exc.code, str(exc))
 
         except Gone as exc:
-            return util.return_response(410, {"error": str(exc), "errCode": exc.code})
+            return _error_response(410, exc.code, str(exc))
 
         except TooLarge as exc:
-            return util.return_response(413, {"error": str(exc), "errCode": exc.code})
+            return _error_response(413, exc.code, str(exc))
 
         except UnprocessableEntity as exc:
-            return util.return_response(422, {"error": str(exc), "errCode": exc.code})
+            return _error_response(422, exc.code, str(exc))
 
         except InternalServerError as exc:
-            return util.return_response(500, {"error": str(exc), "errCode": exc.code})
+            return _error_response(500, exc.code, str(exc))
 
         except AppException as exc:
-            return util.return_response(500, {"error": str(exc), "errCode": exc.code})
+            return _error_response(500, exc.code, str(exc))
 
         except:
-            return util.return_response(
-                500, {"error": "Internal server error", "errCode": "INTERNAL_ERROR"}
-            )
+            return _error_response(500, "INTERNAL_ERROR", "Internal server error")
         finally:
             db.close()
 

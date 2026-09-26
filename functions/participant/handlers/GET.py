@@ -1,8 +1,7 @@
 from shared import util
 
 from ..schemas.event import GetParticipantsParams
-from ..schemas.participant import GetDetailParticipantResult
-from ..schemas.response import PaginatedParticipantsResponse
+from ..schemas.response import GetDetailParticipantResponse, PaginatedParticipantsResponse
 from ..services.participant import ParticipantService
 
 
@@ -28,12 +27,13 @@ def get_participants_handler(event: dict) -> dict:
 def get_participant_detail_handler(event: dict) -> dict:
     participant_id = (event.get("pathParameters") or {}).get("id")
     if not participant_id:
-        return util.return_response(400, {})
+        raise util.HttpError(400, "INVALID_ID", "id is required")
+    util.current_user_id(event)
 
     service = ParticipantService()
     result = service.get_detail(participant_id)
 
-    response: GetDetailParticipantResult = {
+    response: GetDetailParticipantResponse = {
         "participant": result["participant"],
         "documents": result["documents"],
     }

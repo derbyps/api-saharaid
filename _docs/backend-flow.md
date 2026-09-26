@@ -14,6 +14,7 @@ The design priorities are, in order:
 ## 2. Request boundaries
 
 - One Serverless service defines multiple Python Lambda functions, their API Gateway HTTP API routes, and shared configuration.
+- Participant routes use the participant Lambda; `/files/presign-upload`, `/files/presign-download`, and `/documents` use the documents Lambda.
 - The frontend sends a Cognito access token to API Gateway. An HTTP API JWT authorizer validates its signature, issuer, audience, and expiry before invoking a protected Lambda function.
 - `POST /login` accepts credentials and invokes Cognito through boto3. If Cognito returns `NEW_PASSWORD_REQUIRED`, Lambda returns a challenge session and the frontend prompts for a new password. `POST /login/new-password` responds to the challenge through Cognito; only after it succeeds does the backend return tokens.
 - `POST /login/refresh` uses the Cognito refresh token to obtain another access token. It returns a replacement refresh token when Cognito rotates it; otherwise the existing refresh token remains usable.
@@ -32,9 +33,9 @@ The design priorities are, in order:
 ### 2.1 Database and network boundary
 
 - Amazon RDS for PostgreSQL is accessed directly from Lambda through SQLAlchemy 2.0. There is no RDS Proxy.
-- Database-backed Lambda functions run in subnets that can reach the private RDS instance. Security groups permit only the required database connection.
+- Lambda functions are not attached to a customer VPC. `DATABASE_URL` must point to a publicly reachable PostgreSQL endpoint with TLS enabled; if it is RDS, public accessibility and database security-group ingress must be configured.
 - Keep SQLAlchemy connection pools small and close sessions after each invocation. Lambda concurrency and database `max_connections` must be sized together.
-- The same VPC-connected functions must reach Sanity and Cognito over outbound internet access and S3 through appropriate network routing or an S3 endpoint. A public subnet alone does not give VPC-connected Lambda internet access.
+- Lambda's default network access reaches public Cognito, S3, and Sanity endpoints.
 - Keep Sanity write tokens and database credentials in backend-only secret configuration; never send them to clients or log them.
 
 ### 2.2 PostgreSQL mirror identifiers
@@ -52,6 +53,15 @@ The design priorities are, in order:
 - Incoming timestamp instants are normalized by PostgreSQL and presented in GMT+7.
 - `date` columns remain date-only values and are not shifted between timezones.
 - Today, Yesterday, rolling filters, calendar-year boundaries, and yearly schedule batch allocation use GMT+7.
+
+### 2.4 N-layer convention
+
+Backend features use four layers: handlers, services, repositories, and schemas. Handlers receive requests and produce API responses; services return business results; repositories return database rows; schemas define the types passed between these layers.
+
+- Name repository output schema types with the `Row` suffix (for example, `ParticipantRow`).
+- Name service output schema types with the `Result` suffix (for example, `GetParticipantsResult`).
+- Name API response schema types with the `Response` suffix (for example, `PaginatedParticipantsResponse` or `ErrorResponse`). This applies to every endpoint, including error responses.
+- A handler maps a service `Result` to an API `Response`; error payloads also use a `Response` type.
 
 ## 3. Read flows
 
@@ -111,6 +121,8 @@ This is one request per result page. It must not call Sanity once per enrollment
 
 The backend never receives the file bodies. If an upload fails, the frontend retries only that S3 upload and does not create another participant.
 
+The S3 bucket CORS policy must allow the frontend origin to send direct `PUT` requests with `Content-Type`.
+
 Participant create and update use partial unique database indexes for active rows: `lower(trim(name))` for names and `trim(phone_number)` for phone numbers. Soft-deleted rows are excluded from both indexes.
 
 The metadata request contains the participant UUID, document type, returned S3 key, original filename, content type, size, and last-modified timestamp. Before inserting metadata, the backend performs an S3 `HEAD` request and validates object-key ownership, actual size, and actual content type.
@@ -122,6 +134,8 @@ All eight participant document types are optional and limited to 1 MiB. `passpor
 Profile changes use one participant update. Document changes use the same single presign request for additions and one batched metadata request containing additions and removal IDs.
 
 For removals, ownership must be verified before deleting the S3 object and metadata row. A database failure must not silently leave metadata pointing to a deleted object.
+
+The metadata removal and an S3 cleanup record commit together. S3 deletion follows the commit; if it fails, retry the removal using the same `remove_ids` without resending additions.
 
 ### 4.3 Bulk import
 
@@ -259,14 +273,14 @@ Use a PostgreSQL-owned yearly counter allocated in the same transaction as sched
 
 ## 10. Implementation status
 
-The Lambda source files and `serverless.yml` are placeholders. This document is the target flow for the new implementation. Certificate work remains out of scope.
+Participant creation and document routes are implemented. The remaining flows in this document are targets for later work. Certificate work remains out of scope.
 
 ## AWS references
 
 - [HTTP API JWT authorizers](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-jwt-authorizer.html)
 - [Lambda proxy payload format 2.0](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)
 - [Direct Lambda connections to RDS](https://docs.aws.amazon.com/lambda/latest/dg/services-rds.html)
-- [VPC-connected Lambda internet access](https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-internet.html)
+- [RDS public accessibility](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ModifyInstance.Settings.html)
 - [Cognito administrator-created users](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-admin-create-user-policy.html)
 - [Cognito temporary-password challenge](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminRespondToAuthChallenge.html)
 - [Cognito refresh token flows](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-the-refresh-token.html)

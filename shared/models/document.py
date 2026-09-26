@@ -22,3 +22,13 @@ class Document(Base):
     last_modified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     created_by: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False)
+
+
+class DocumentDeletion(Base):
+    __tablename__ = "document_deletions"
+    __table_args__ = {"schema": "public"}
+
+    document_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), primary_key=True)
+    participant_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), ForeignKey("public.participants.id"), nullable=False)
+    s3_key: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

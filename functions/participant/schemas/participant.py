@@ -1,5 +1,7 @@
 from typing import TypedDict
 
+from functions.documents.schemas.document import DocumentMetadataRow
+
 
 class ParticipantRow(TypedDict):
     id: str
@@ -13,16 +15,6 @@ class ParticipantRow(TypedDict):
 class GetParticipantsResult(TypedDict):
     participants: list[ParticipantRow]
     total_data: int
-
-
-class DocumentsRow(TypedDict):
-    id: str
-    document_type: str
-    original_filename: str
-    content_type: str
-    file_size: int
-    last_modified_at: str
-    uploaded_at: str
 
 
 class DetailParticipantRow(TypedDict):
@@ -41,8 +33,18 @@ class DetailParticipantRow(TypedDict):
     cr_number: str
     tax_number: str
     serial_number: int
+    created_at: str
+    updated_at: str | None
 
 
 class GetDetailParticipantResult(TypedDict):
     participant: DetailParticipantRow
-    documents: list[DocumentsRow]
+    documents: list[DocumentMetadataRow]
+
+
+class CreateParticipantResult(TypedDict):
+    participant: DetailParticipantRow
+
+
+class ParticipantOwnerRow(TypedDict):
+    id: str

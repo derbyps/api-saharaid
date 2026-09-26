@@ -391,7 +391,7 @@ The backend verifies the active owner, count, declared type, and declared size b
 }
 ```
 
-The frontend uploads bytes directly to each URL.
+The frontend uploads bytes directly to each URL using `PUT` and the same `Content-Type` sent as `content_type` in the presign request.
 
 ### POST `/documents`
 
@@ -420,6 +420,8 @@ The backend verifies ownership and performs S3 `HEAD` for every new object. The 
 ```ts
 { documents: DocumentMetadata[] }
 ```
+
+If S3 cleanup fails after the metadata commit, the backend returns `502 S3_CLEANUP_PENDING`. Retry `POST /documents` with the same owner, `documents: []`, and the same `remove_ids`.
 
 Participant slots are optional and accept at most one file per document type. Instructor supports one optional PDF `curiculum_vitae`. Every file is limited to 1 MiB.
 

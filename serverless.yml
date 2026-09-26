@@ -1,5 +1,10 @@
 service: saharaid-backoffice
-frameworkVersion: '4'
+frameworkVersion: '3.22.0'
+# Serverless 3.22 predates Python 3.12; keep other validation warnings visible.
+configValidationMode: warn
+
+plugins:
+  - serverless-python-requirements
 
 provider:
   name: aws
@@ -8,12 +13,15 @@ provider:
   region: ${env:AWS_REGION}
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
-  vpc:
-    securityGroupIds:
-      - ${env:LAMBDA_SECURITY_GROUP_ID}
-    subnetIds:
-      - ${env:PRIVATE_SUBNET_ID_1}
-      - ${env:PRIVATE_SUBNET_ID_2}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: arn:aws:s3:::${env:S3_BUCKET}/documents/participant/*
   httpApi:
     authorizers:
       cognito:
@@ -35,6 +43,11 @@ functions:
           authorizer:
             name: cognito
       - httpApi:
+          path: /participant/{id}
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
           path: /participant
           method: post
           authorizer:
@@ -42,6 +55,29 @@ functions:
       - httpApi:
           path: /participant
           method: put
+          authorizer:
+            name: cognito
+
+  documents:
+    handler: functions/documents/lambda_function.lambda_handler
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+    # ponytail: direct PostgreSQL connections; raise this only with database connection capacity.
+    reservedConcurrency: ${env:DOCUMENTS_RESERVED_CONCURRENCY, 5}
+    events:
+      - httpApi:
+          path: /files/presign-upload
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /files/presign-download
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /documents
+          method: post
           authorizer:
             name: cognito
 
