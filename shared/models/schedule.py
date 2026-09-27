@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, DateTime, String, func, text
+from sqlalchemy import BigInteger, Boolean, DateTime, Identity, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.configs.db import Base, db
@@ -30,6 +30,9 @@ class Schedule(Base):
     course_mode_id: Mapped[str] = mapped_column(
         String,
         nullable=False,
+    )
+    serial_number: Mapped[int] = mapped_column(
+        BigInteger, Identity(always=True), unique=True
     )
     created_by: Mapped[str] = mapped_column(
         String,
