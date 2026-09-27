@@ -1,6 +1,6 @@
 from datetime import datetime
-
 from zoneinfo import ZoneInfo
+
 from sqlalchemy.orm import DeclarativeBase, Session
 
 from shared.models.user import User
