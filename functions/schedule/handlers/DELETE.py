@@ -1,8 +1,7 @@
-from shared.models.schedule import Schedule
-
 from shared import util
 from shared.configs.config import config
 from shared.configs.db import db
+from shared.models.schedule import Schedule
 
 
 def delete_method_handler(event: dict) -> dict:
