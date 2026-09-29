@@ -9,7 +9,12 @@ from ..schemas.participant import DetailParticipantRow, ParticipantRow
 
 class ParticipantRepository:
     def get_max_serial_number(self) -> int:
-        return db.session.scalar(select(func.max(Participant.serial_number))) or 0
+        return (
+            db.session.scalar(
+                select(func.max(Participant.serial_number)).select_from(Participant)
+            )
+            or 0
+        )
 
     def get_participants(self, offset: int, limit: int) -> list[ParticipantRow]:
 

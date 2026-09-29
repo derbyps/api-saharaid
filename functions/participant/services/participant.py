@@ -33,7 +33,6 @@ class ParticipantService:
         return GetDetailParticipantResult(participant=participant, documents=[])
 
     def create(self, body: dict, actor_id: str) -> Participant:
-        # ponytail: concurrent creates can race; use a locked counter if throughput requires it.
         serial_number = self.repo.get_max_serial_number() + 1
 
         participant = Participant(
