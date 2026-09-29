@@ -11,6 +11,14 @@ from ..schemas.schedule import DetailScheduleRow, ScheduleRow
 
 
 class ScheduleRepository:
+    def get_max_serial_number(self) -> int:
+        return (
+            db.session.scalar(
+                select(func.max(Schedule.serial_number)).select_from(Schedule)
+            )
+            or 0
+        )
+
     def get_schedules(self, offset: int, limit: int) -> list[ScheduleRow]:
 
         query = (

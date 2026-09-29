@@ -32,6 +32,9 @@ class ScheduleService:
         return GetDetailScheduleResult(schedule=schedule, documents=[])
 
     def create(self, body: dict) -> Schedule:
+
+        serial_number = self.repo.get_max_serial_number() + 1
+
         schedule = Schedule(
             id=uuid.uuid4(),
             course_id=body["course_id"],
@@ -39,7 +42,7 @@ class ScheduleService:
             end_date=body["end_date"],
             location=body["location"],
             course_mode_id=body["course_mode_id"],
-            serial_number=body["serial_number"],
+            serial_number=serial_number,
             created_at=config.TIMESTAMP,
             created_by=config.USER_ID,
         )
