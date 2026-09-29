@@ -10,12 +10,26 @@ from ..services.participant import ParticipantService
 
 
 def create_participant_handler(event: dict) -> dict:
-    body = util.parse_body(event)
-    fields = CreateParticipantBody.__annotations__
-    if body.keys() != fields.keys() or any(
-        not isinstance(body[field], str) for field in fields
-    ):
-        raise util.HttpError(400, "INVALID_BODY", "Participant fields are missing or invalid")
+    body = json.loads(event.get("body") or "{}")
+    req_body = [
+        "name",
+        "identity_number",
+        "gender",
+        "phone_number",
+        "email",
+        "date_of_birth",
+        "religion",
+        "address",
+        "job_position",
+        "job_company",
+        "education",
+        "cr_number",
+        "tax_number",
+        "serial_number",
+    ]
+    for item in req_body:
+        if item not in body:
+            return util.return_response(422, {})
 
     for field in ("name", "phone_number", "email"):
         body[field] = body[field].strip()
@@ -27,7 +41,9 @@ def create_participant_handler(event: dict) -> dict:
     try:
         body["date_of_birth"] = date.fromisoformat(body["date_of_birth"])
     except ValueError as exc:
-        raise util.HttpError(400, "INVALID_BODY", "date_of_birth must be YYYY-MM-DD") from exc
+        raise util.HttpError(
+            400, "INVALID_BODY", "date_of_birth must be YYYY-MM-DD"
+        ) from exc
 
     actor_id = util.current_user_id(event)
     result = ParticipantService().create(body, str(actor_id))

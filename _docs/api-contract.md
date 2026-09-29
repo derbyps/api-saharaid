@@ -227,19 +227,12 @@ type Schedule = {
 
 Query:
 
-```ts
+```json
 {
-  p?: number;
-  rp?: number;
-  created?:
-    | "last_hour"
-    | "today"
-    | "yesterday"
-    | "last_7_days"
-    | "last_30_days"
-    | "last_90_days"
-    | "last_365_days";
-  sort?: "oldest" | "newest" | "name_asc" | "name_desc";
+  "p": number,
+  "rp": number,
+  "created": "last_hour" | "today" | "yesterday" | "last_7_days" | "last_30_days" | "last_90_days" | "last_365_days",
+  "sort": "oldest" | "newest" | "name_asc" | "name_desc"
 }
 ```
 
@@ -288,16 +281,47 @@ Success — `200`:
 Document metadata does not include `s3_key` or a signed URL.
 
 ### POST `/participant`
+```json
+{
+  "name": str,
+  "identity_number": str,
+  "gender": str,
+  "phone_number": str,
+  "email": str,
+  "date_of_birth": str,
+  "religion": str,
+  "address": str,
+  "job_position": str,
+  "job_company": str,
+  "education": str,
+  "cr_number": str,
+  "tax_number": str,
+  "serial_number": int,
+}
+```
 
-### PUT `/participant?id={uuid}`
+
+### PUT `/participant/{id}`
 
 Both use:
 
-```ts
-type ParticipantPayload = Omit<
-  Participant,
-  "id" | "serial_number" | "created_at" | "updated_at"
->;
+```json
+{
+  "name": str,
+  "identity_number": str,
+  "gender": str,
+  "phone_number": str,
+  "email": str,
+  "date_of_birth": str,
+  "religion": str,
+  "address": str,
+  "job_position": str,
+  "job_company": str,
+  "education": str,
+  "cr_number": str,
+  "tax_number": str,
+  "serial_number": int,
+}
 ```
 
 `POST` returns `{ participant: Participant }` with `201`; `PUT` returns it with `200`.
@@ -306,13 +330,27 @@ The backend assigns `serial_number` as one greater than the highest existing val
 
 Names are trimmed and unique among active participants using case-insensitive comparison. Phone numbers are trimmed and unique among active participants without other normalization. Soft-deleted rows do not reserve either value. A conflict returns `409 PARTICIPANT_ALREADY_EXISTS`.
 
-### DELETE `/participant?id={uuid}`
+### DELETE `/participant/{id}`
 
 Soft-deletes the participant. Success — `200`:
 
 ```ts
 {
-  participant: Participant;
+  "id": str,
+  "name": str,
+  "identity_number": str,
+  "gender": str,
+  "phone_number": str,
+  "email": str,
+  "date_of_birth": str,
+  "religion": str,
+  "address": str,
+  "job_position": str,
+  "job_company": str,
+  "education": str,
+  "cr_number": str,
+  "tax_number": str,
+  "serial_number": int,
 }
 ```
 
@@ -349,32 +387,41 @@ Success — `200` with content type `application/vnd.openxmlformats-officedocume
 
 Query:
 
-```ts
+```json
 {
-  id: string;
-  p?: number;
-  rp?: number;
-  course_name?: string;
-  course_theme_id?: string; // local MySQL UUID
-  sort?: "oldest" | "newest" | "name_asc" | "name_desc";
+  "id": string,
+  "p": number,
+  "rp": number,
+  "course_name": string,
+  "course_theme_id": string, // local MySQL UUID
+  "sort": "oldest" | "newest" | "name_asc" | "name_desc",
 }
 ```
 
 Success — `200`:
 
-```ts
-Paginated<{
-  enrollment_id: string;
-  enrolled_at: string;
-  schedule_id: string;
-  batch: number;
-  start_date: string;
-  end_date: string;
-  course_id: string;
-  course_sanity_id: string;
-  course_title: string;
-  course_themes: Array<{ id: string; title: string; slug: string }>;
-}>;
+```json
+[
+  {
+    "enrollment_id": string,
+    "enrolled_at": string,
+    "schedule_id": string,
+    "batch": number,
+    "start_date": string,
+    "end_date": string,
+    "course_id": string,
+    "course_sanity_id": string,
+    "course_title": string,
+    "course_themes": 
+    [
+      { 
+        "id": string,
+        "title": string, 
+        "slug": string 
+      }
+    ]
+  }
+]
 ```
 
 Search applies to course title only.
@@ -383,31 +430,35 @@ Search applies to course title only.
 
 ### POST `/files/presign-upload`
 
-```ts
-type PresignUploadRequest = {
-  owner: {
-    type: "participant" | "instructor" | "course";
-    id: string;
-  };
-  files: Array<{
-    filename: string;
-    content_type: string;
-    file_size: number;
-    document_type?: string; // participant/instructor only
-    asset_type?: "gallery" | "brochure"; // course only
-  }>;
+```json
+{
+  "owner": {
+    "type": "participant" | "instructor" | "course",
+    "id": string
+  },
+  "files": [
+    {
+      "filename": string,
+      "content_type": string,
+      "file_size": number,
+      "document_type": string, // participant/instructor only
+      "asset_type": "gallery" | "brochure", // course only
+    }
+  ]
 };
 ```
 
 The backend verifies the active owner, count, declared type, and declared size before signing. Course requests allow at most six gallery images. Success — `200`:
 
-```ts
+```json
 {
-  files: Array<{
-    s3_key: string;
-    upload_url: string;
-  }>;
-  expires_in: number;
+  "files": [
+    {
+      "s3_key": string,
+      "upload_url": string,
+    }
+  ],
+  "expires_in": number,
 }
 ```
 
@@ -417,22 +468,24 @@ The frontend uploads bytes directly to each URL using `PUT` and the same `Conten
 
 Records participant or instructor document metadata after direct upload.
 
-```ts
-type DocumentsRequest = {
-  owner: {
-    type: "participant" | "instructor";
-    id: string;
-  };
-  documents: Array<{
-    document_type: string;
-    s3_key: string;
-    original_filename: string;
-    content_type: string;
-    file_size: number;
-    last_modified_at: string;
-  }>;
-  remove_ids?: string[];
-};
+```json
+{
+  "owner": {
+    "type": "participant" | "instructor",
+    "id": string,
+  },
+  "documents": [
+    {
+      "document_type": string,
+      "s3_key": string,
+      "original_filename": string,
+      "content_type": string,
+      "file_size": number,
+      "last_modified_at": string,
+    }
+  ],
+  "remove_ids": string[],
+}
 ```
 
 The backend verifies ownership and performs S3 `HEAD` for every new object. The actual content type and size must match the allowed slot and request metadata. Additions and removals are committed as one metadata operation. Success — `200`:
@@ -447,19 +500,19 @@ Participant slots are optional and accept at most one file per document type. In
 
 ### POST `/files/presign-download`
 
-```ts
+```json
 {
-  owner_type: "participant" | "instructor";
-  document_id: string;
+  "owner_type": "participant" | "instructor",
+  "document_id": string
 }
 ```
 
 The backend resolves the S3 key from MySQL after authorization; clients cannot submit a raw S3 key. Success — `200`:
 
-```ts
+```json
 {
-  download_url: string;
-  expires_in: number;
+  "download_url": string,
+  "expires_in": number
 }
 ```
 
@@ -469,23 +522,23 @@ The backend resolves the S3 key from MySQL after authorization; clients cannot s
 
 Query:
 
-```ts
+```json
 {
-  p?: number;
-  rp?: number;
-  course_theme_id?: string;
-  sort?: "oldest" | "newest" | "name_asc" | "name_desc";
+  "p": number,
+  "rp": number,
+  "course_theme_id": string,
+  "sort": "oldest" | "newest" | "name_asc" | "name_desc"
 }
 ```
 
 Success — `200`:
 
-```ts
-Paginated<
-  Instructor & {
-    document: (DocumentMetadata & { available: true }) | null;
+```json
+"instructor" [ 
+  {
+    "document": (DocumentMetadata & { available: true }) | null;
   }
->;
+]
 ```
 
 No signed URL is generated by the list.
@@ -494,25 +547,43 @@ No signed URL is generated by the list.
 
 Success — `200`:
 
-```ts
+```json
 {
-  instructor: Instructor;
-  document: DocumentMetadata | null;
+  "instructor": {
+    "id": str,
+    "name": str,
+    "phone_number": str,
+    "email": str,
+    "course_theme_id": str,
+    "specialization": str,
+    "created_at": str,
+    "created_by": str,
+  }
+  "document": DocumentMetadata | null;
 }
 ```
 
 ### POST `/instructor`
+```json
+{
+  "name": string,
+  "phone_number": string,
+  "email": string,
+  "course_theme_id": string,
+  "expertise": string,
+}
+```
 
 ### PUT `/instructor?id={uuid}`
 
-```ts
-type InstructorPayload = {
-  name: string;
-  phone_number: string;
-  email: string;
-  course_theme_id: string;
-  expertise: string;
-};
+```json
+{
+  "name": string,
+  "phone_number": string,
+  "email": string,
+  "course_theme_id": string,
+  "expertise": string,
+}
 ```
 
 The course-theme ID is the local MySQL UUID. `POST` returns `{ instructor: Instructor }` with `201`; `PUT` returns it with `200`.
@@ -647,12 +718,23 @@ The operation is idempotent for the same course and S3 keys. Success — `200`:
 
 Query:
 
-```ts
+```json
 {
-  p?: number;
-  rp?: number;
-  course_theme_id?: string;
-  sort?: "oldest" | "newest" | "name_asc" | "name_desc";
+  "p": number,
+  "rp": number,
+  "course_theme_id": string,
+  "sort": "oldest" | "newest" | "name_asc" | "name_desc",
+}
+```
+```json
+{
+  "schedule": {
+    "id": str,
+    "serial_number": int,
+    "name": str,
+    "phone_number": str,
+    "email": str,
+  },
 }
 ```
 
