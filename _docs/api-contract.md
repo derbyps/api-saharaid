@@ -4,6 +4,8 @@
 
 This is the target contract for the new AWS backend. Paths are relative to the API Gateway HTTP API base URL. The previous Supabase handlers were unreleased; the existing business routes and payloads are retained where the service change allows.
 
+**Frontend handoff status (2026-09-29):** Only `POST /login` has been verified against the deployed backend. `/login/new-password` and `/login/refresh` are not deployed. Participant and document routes are not ready for frontend integration; their current implementation does not yet match this target contract. See `_docs/backend-flow.md` §10 for the blockers.
+
 The `ts` blocks below describe JSON field names and types; they are documentation only. Clients send ordinary JSON, and the backend is Python.
 
 Certificate APIs are out of scope.
@@ -12,17 +14,17 @@ Certificate APIs are out of scope.
 
 ### 2.1 Authentication
 
-- `POST /register` is deprecated and is not deployed. Backoffice users are created manually in Cognito and PostgreSQL.
+- `POST /register` is deprecated and is not deployed. Backoffice users are created manually in Cognito and MySQL.
 - `POST /login`, `POST /login/new-password`, and `POST /login/refresh` call Cognito through the backend and do not require a bearer token.
 - Every business endpoint requires `Authorization: Bearer <Cognito access token>`.
-- API Gateway HTTP API validates the JWT. Lambda verifies that it is an access token, obtains the Cognito user's email, and resolves a matching backoffice user by email in PostgreSQL before business logic runs.
-- All provisioned backoffice users have the same access in this phase; roles are deferred. Email changes require coordinated administrator updates in Cognito and PostgreSQL.
+- API Gateway HTTP API validates the JWT. Lambda verifies that it is an access token, obtains the Cognito user's email, and resolves a matching backoffice user by email in MySQL before business logic runs.
+- All provisioned backoffice users have the same access in this phase; roles are deferred. Email changes require coordinated administrator updates in Cognito and MySQL.
 - Sanity write tokens, database credentials, privileged AWS credentials, and raw password data are never returned.
 
 ### 2.2 JSON and naming
 
 - JSON fields and query parameters use `snake_case`, except the preserved authentication response field `refreshToken`.
-- UUID fields contain PostgreSQL entity IDs.
+- UUID fields contain MySQL entity IDs.
 - Fields ending in `_sanity_id` contain Sanity string document IDs and must not be parsed as UUIDs.
 - Empty optional fields use `null` or are omitted as stated; empty strings are not substitutes for missing values.
 
@@ -57,7 +59,7 @@ Common statuses:
 | 409    | Unique conflict, duplicate enrollment, or referenced option |
 | 413    | Bulk/file count or declared file size exceeds its limit     |
 | 500    | Database or internal failure                                |
-| 502    | S3 or Sanity operation failed                               |
+| 502    | Cognito, S3, or Sanity operation failed                      |
 
 ### 2.5 Pagination
 
@@ -98,11 +100,11 @@ type LoginRequest = {
 };
 ```
 
-Lambda calls Cognito `AdminInitiateAuth` through boto3. A normal login returns `200`:
+Lambda calls Cognito `InitiateAuth` with `USER_PASSWORD_AUTH` through boto3. A normal login returns `200`:
 
 ```ts
 type LoginSuccess = {
-  user: { id: string; name: string; email: string }; // PostgreSQL UUID and profile
+  user: { id: string; name: string; email: string }; // MySQL UUID and profile
   token: string; // Cognito access token
   refreshToken: string; // Cognito refresh token
 };
@@ -130,7 +132,7 @@ The frontend displays a new-password form and keeps the opaque challenge session
 }
 ```
 
-Lambda calls Cognito `AdminRespondToAuthChallenge` with `NEW_PASSWORD_REQUIRED`. On success it checks for the matching PostgreSQL user and returns `LoginSuccess` with `200`. Invalid or expired challenge sessions return `401`; passwords rejected by the Cognito password policy return `400`.
+Lambda calls Cognito `RespondToAuthChallenge` with `NEW_PASSWORD_REQUIRED`. On success it checks for the matching MySQL user and returns `LoginSuccess` with `200`. Invalid or expired challenge sessions return `401`; passwords rejected by the Cognito password policy return `400`.
 
 ### POST `/login/refresh`
 
@@ -140,7 +142,7 @@ Lambda calls Cognito `AdminRespondToAuthChallenge` with `NEW_PASSWORD_REQUIRED`.
 }
 ```
 
-Lambda asks Cognito for a new access token, checks the matching PostgreSQL user, and returns `200`:
+Lambda asks Cognito for a new access token, checks the matching MySQL user, and returns `200`:
 
 ```ts
 {
@@ -151,7 +153,7 @@ Lambda asks Cognito for a new access token, checks the matching PostgreSQL user,
 
 If Cognito rotates the refresh token, the response contains the replacement. Otherwise it returns the existing token. Cognito controls both token lifetimes; the backend does not store either token. Invalid or expired refresh tokens return `401`.
 
-The Cognito pool uses email as the sign-in identifier and is provisioned with each user's email so no additional required attributes interrupt the new-password challenge. Only administrators may change user email, and they must update Cognito and PostgreSQL together. Without email delivery, forgotten passwords and expired temporary passwords are reset manually by an administrator.
+The Cognito pool uses email as the sign-in identifier and is provisioned with each user's email so no additional required attributes interrupt the new-password challenge. Only administrators may change user email, and they must update Cognito and MySQL together. Without email delivery, forgotten passwords and expired temporary passwords are reset manually by an administrator.
 
 ## 4. Shared data types
 
@@ -300,6 +302,8 @@ type ParticipantPayload = Omit<
 
 `POST` returns `{ participant: Participant }` with `201`; `PUT` returns it with `200`.
 
+The backend assigns `serial_number` as one greater than the highest existing value, including soft-deleted participants. The frontend does not send it.
+
 Names are trimmed and unique among active participants using case-insensitive comparison. Phone numbers are trimmed and unique among active participants without other normalization. Soft-deleted rows do not reserve either value. A conflict returns `409 PARTICIPANT_ALREADY_EXISTS`.
 
 ### DELETE `/participant?id={uuid}`
@@ -351,7 +355,7 @@ Query:
   p?: number;
   rp?: number;
   course_name?: string;
-  course_theme_id?: string; // local PostgreSQL UUID
+  course_theme_id?: string; // local MySQL UUID
   sort?: "oldest" | "newest" | "name_asc" | "name_desc";
 }
 ```
@@ -450,7 +454,7 @@ Participant slots are optional and accept at most one file per document type. In
 }
 ```
 
-The backend resolves the S3 key from PostgreSQL after authorization; clients cannot submit a raw S3 key. Success — `200`:
+The backend resolves the S3 key from MySQL after authorization; clients cannot submit a raw S3 key. Success — `200`:
 
 ```ts
 {
@@ -511,7 +515,7 @@ type InstructorPayload = {
 };
 ```
 
-The course-theme ID is the local PostgreSQL UUID. `POST` returns `{ instructor: Instructor }` with `201`; `PUT` returns it with `200`.
+The course-theme ID is the local MySQL UUID. `POST` returns `{ instructor: Instructor }` with `201`; `PUT` returns it with `200`.
 
 ## 8. Course reference options
 
@@ -532,7 +536,7 @@ Returns all compact options for globally cached selectors. Success — `200`:
 ```ts
 {
   options: Array<{
-    id: string; // local PostgreSQL UUID
+    id: string; // local MySQL UUID
     sanity_id: string;
     title: string;
     slug?: string; // courseTheme
@@ -543,7 +547,7 @@ Returns all compact options for globally cached selectors. Success — `200`:
 
 ### POST `/course?resource={CourseResource}`
 
-Creates the Sanity option and its PostgreSQL mirror.
+Creates the Sanity option and its MySQL mirror.
 
 ```ts
 type CourseOptionRequest = {
@@ -557,7 +561,7 @@ Success — `201`: `{ option: ... }` using the GET option shape.
 
 ### DELETE `/course?resource={CourseResource}&id={uuid}`
 
-`id` is the local PostgreSQL UUID. The backend rejects referenced options with `409 OPTION_IN_USE`, then deletes from Sanity and PostgreSQL. Success — `200` with `{}`.
+`id` is the local MySQL UUID. The backend rejects referenced options with `409 OPTION_IN_USE`, then deletes from Sanity and MySQL. Success — `200` with `{}`.
 
 ## 9. Courses
 
@@ -586,7 +590,7 @@ type CoursePayload = {
 };
 ```
 
-The backend validates every Sanity reference, creates the Sanity document, and inserts its PostgreSQL mirror and theme relationships. Success — `201`:
+The backend validates every Sanity reference, creates the Sanity document, and inserts its MySQL mirror and theme relationships. Success — `201`:
 
 ```ts
 {
@@ -603,7 +607,7 @@ The backend validates every Sanity reference, creates the Sanity document, and i
 
 ### PUT `/course?id={uuid}`
 
-Uses `CoursePayload` and updates the existing Sanity document, PostgreSQL mirror, and theme relationships. File fields remain unchanged. Success — `200` with the same course shape as POST.
+Uses `CoursePayload` and updates the existing Sanity document, MySQL mirror, and theme relationships. File fields remain unchanged. Success — `200` with the same course shape as POST.
 
 ### POST `/course/finalize?id={uuid}`
 
@@ -683,7 +687,7 @@ type SchedulePayload = {
 };
 ```
 
-PostgreSQL assigns `batch` atomically from the GMT+7 year of `start_date`. Success — `201`: `{ schedule: Schedule }`.
+MySQL assigns `batch` atomically from the GMT+7 year of `start_date`. Success — `201`: `{ schedule: Schedule }`.
 
 ### PUT `/schedule?id={uuid}`
 

@@ -183,6 +183,4 @@ layers/*/.serverless
 
 .codegpt
 
-AGENTS.md
-
 :memory:

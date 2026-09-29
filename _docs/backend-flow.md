@@ -7,7 +7,7 @@ This document defines the new AWS backend flow. The previous Supabase implementa
 The design priorities are, in order:
 
 1. Keep credentials and privileged operations on the backend.
-2. Keep file bytes out of PostgreSQL and ordinary Lambda function requests.
+2. Keep file bytes out of MySQL and ordinary Lambda function requests.
 3. Minimize API round trips and response payloads.
 4. Avoid full-file buffering and uncontrolled database connections in Lambda functions.
 
@@ -16,41 +16,40 @@ The design priorities are, in order:
 - One Serverless service defines multiple Python Lambda functions, their API Gateway HTTP API routes, and shared configuration.
 - Participant routes use the participant Lambda; `/files/presign-upload`, `/files/presign-download`, and `/documents` use the documents Lambda.
 - The frontend sends a Cognito access token to API Gateway. An HTTP API JWT authorizer validates its signature, issuer, audience, and expiry before invoking a protected Lambda function.
-- `POST /login` accepts credentials and invokes Cognito through boto3. If Cognito returns `NEW_PASSWORD_REQUIRED`, Lambda returns a challenge session and the frontend prompts for a new password. `POST /login/new-password` responds to the challenge through Cognito; only after it succeeds does the backend return tokens.
+- `POST /login` accepts credentials and invokes Cognito `InitiateAuth` with `USER_PASSWORD_AUTH` through boto3. If Cognito returns `NEW_PASSWORD_REQUIRED`, Lambda returns a challenge session and the frontend prompts for a new password. `POST /login/new-password` responds through Cognito `RespondToAuthChallenge`; only after it succeeds does the backend return tokens.
 - `POST /login/refresh` uses the Cognito refresh token to obtain another access token. It returns a replacement refresh token when Cognito rotates it; otherwise the existing refresh token remains usable.
-- The backend checks the authenticated Cognito email against a backoffice user before returning tokens. The PostgreSQL user has UUID, name, and email; Cognito owns credentials, so the table contains no password or refresh token.
+- The backend checks the authenticated Cognito email against a backoffice user before returning tokens. The MySQL user has UUID, name, and email; Cognito owns credentials, so the table contains no password or refresh token.
 - Backoffice user emails are unique under case-insensitive comparison and are provisioned with the same value as Cognito email. Never trust an email supplied in a request body for the protected-route lookup.
-- The superadmin and teammates are provisioned manually in Cognito and PostgreSQL. For teammates, Cognito invitation email is suppressed and a temporary password is delivered through a secure channel. In-app invitations, SES delivery, and automated account recovery are deferred.
+- The superadmin and teammates are provisioned manually in Cognito and MySQL. For teammates, Cognito invitation email is suppressed and a temporary password is delivered through a secure channel. In-app invitations, SES delivery, and automated account recovery are deferred.
 - Cognito self-registration is disabled. The app client permits backend password authentication; administrator-created teammate accounts use `MessageAction=SUPPRESS` and remain in `FORCE_CHANGE_PASSWORD` until the first-login challenge completes. Expired temporary passwords are reset manually by an administrator.
-- On protected routes, the backend checks `token_use=access`, calls Cognito `GetUser` with the access token to obtain its email, and looks up the PostgreSQL user. The access token itself is not assumed to carry an email claim.
-- For now, all provisioned backoffice users have the same access. Roles are deferred. Cognito self-service email changes must be disabled; admin email changes must be synchronized with PostgreSQL.
-- Lambda functions use an IAM execution role for S3 and the required Cognito administration calls, plus backend-only configuration for PostgreSQL and Sanity credentials.
+- On protected routes, the backend checks `token_use=access`, calls Cognito `GetUser` with the access token to obtain its email, and looks up the MySQL user. The access token itself is not assumed to carry an email claim.
+- For now, all provisioned backoffice users have the same access. Roles are deferred. Cognito self-service email changes must be disabled; admin email changes must be synchronized with MySQL.
+- Lambda functions use an IAM execution role for S3, plus backend-only configuration for MySQL and Sanity credentials.
 - The frontend may read public course content from Sanity, but it never receives a Sanity write token.
 - The frontend uploads and downloads S3 objects using short-lived signed URLs.
-- S3 stores bytes; PostgreSQL stores ownership and file metadata.
-- Backoffice users are provisioned manually in Cognito and PostgreSQL. Public registration and `POST /register` are removed.
+- S3 stores bytes; MySQL stores ownership and file metadata.
+- Backoffice users are provisioned manually in Cognito and MySQL. Public registration and `POST /register` are removed.
 
 ### 2.1 Database and network boundary
 
-- Amazon RDS for PostgreSQL is accessed directly from Lambda through SQLAlchemy 2.0. There is no RDS Proxy.
-- Lambda functions are not attached to a customer VPC. `DATABASE_URL` must point to a publicly reachable PostgreSQL endpoint with TLS enabled; if it is RDS, public accessibility and database security-group ingress must be configured.
+- Amazon RDS for MySQL is accessed directly from Lambda through SQLAlchemy 2.0 and PyMySQL. There is no RDS Proxy.
+- Lambda functions are not attached to a customer VPC. Each Lambda receives `RDS_HOST`, `RDS_USER`, `RDS_PASSWORD`, and `RDS_DATABASE` through the shared Serverless provider environment. `RDS_HOST` must be a publicly reachable RDS endpoint; public accessibility and database security-group ingress must be configured. Connections use TLS with certificate and hostname verification.
 - Keep SQLAlchemy connection pools small and close sessions after each invocation. Lambda concurrency and database `max_connections` must be sized together.
 - Lambda's default network access reaches public Cognito, S3, and Sanity endpoints.
 - Keep Sanity write tokens and database credentials in backend-only secret configuration; never send them to clients or log them.
 
-### 2.2 PostgreSQL mirror identifiers
+### 2.2 MySQL mirror identifiers
 
-- Local operational tables use UUID primary keys.
-- Sanity IDs use `text` columns with unique constraints; they are not assumed to be UUIDs.
-- Course theme, course type, class type, and certificate-validity mirrors exist in PostgreSQL so `course` can use real foreign keys.
+- Local operational tables use UUID values stored as strings.
+- Sanity IDs use bounded `VARCHAR` columns with unique constraints; they are not assumed to be UUIDs.
+- Course theme, course type, class type, and certificate-validity mirrors exist in MySQL so `course` can use real foreign keys.
 - The required new Sanity data is migrated to these mirror tables before backend rollout; no legacy-data reconciliation flow is needed.
 
 ### 2.3 Date and time handling
 
 - GMT+7 (`Asia/Jakarta`) is the database and application business timezone.
-- PostgreSQL timestamp columns use `timestamptz`; do not replace them with timezone-less timestamps.
-- Database defaults such as `now()` and backend-generated timestamps are interpreted and returned under the GMT+7 timezone setting.
-- Incoming timestamp instants are normalized by PostgreSQL and presented in GMT+7.
+- MySQL connections set the session time zone to GMT+7. Defaults such as `now()` use that setting.
+- `DATETIME` columns store GMT+7 business time without timezone information. Convert incoming timestamp instants to GMT+7 before storage; MySQL does not normalize `DATETIME` values.
 - `date` columns remain date-only values and are not shifted between timezones.
 - Today, Yesterday, rolling filters, calendar-year boundaries, and yearly schedule batch allocation use GMT+7.
 
@@ -70,7 +69,7 @@ Backend features use four layers: handlers, services, repositories, and schemas.
 ```text
 Frontend
   -> API Gateway HTTP API -> Lambda function: filters + sort + pagination
-  -> PostgreSQL: filtered query with an explicit column selection
+  -> MySQL: filtered query with an explicit column selection
   <- Lambda function -> API Gateway: compact rows + p + rp + total
   <- Frontend
 ```
@@ -95,12 +94,12 @@ Signed download URLs are produced only on explicit download requests. If a scree
 ```text
 Frontend
   -> API Gateway HTTP API -> Lambda function: participant ID + course-name search + theme filter + p/rp
-  -> PostgreSQL: schedule/enrollment/course-mirror join
+  -> MySQL: schedule/enrollment/course-mirror join
   <- Lambda function -> API Gateway: compact history rows
   <- Frontend
 ```
 
-This is one request per result page. It must not call Sanity once per enrollment. The PostgreSQL course mirror supplies the IDs and labels needed for filtering and rendering; the frontend can use Sanity only when opening full course content.
+This is one request per result page. It must not call Sanity once per enrollment. The MySQL course mirror supplies the IDs and labels needed for filtering and rendering; the frontend can use Sanity only when opening full course content.
 
 ## 4. Participant write flows
 
@@ -108,7 +107,7 @@ This is one request per result page. It must not call Sanity once per enrollment
 
 ```text
 1. Frontend -> participant create
-2. Backend  -> PostgreSQL inserts participant and allocates serial_number
+2. Backend  -> MySQL inserts participant and allocates serial_number
 3. Backend  -> Frontend returns participant UUID
 
 4. Frontend -> one presign request containing all selected files
@@ -116,7 +115,7 @@ This is one request per result page. It must not call Sanity once per enrollment
 6. Frontend -> S3 uploads directly, concurrently with a small client-side limit
 
 7. Frontend -> one document request containing all successful upload metadata
-8. Backend  -> PostgreSQL inserts document rows in one operation
+8. Backend  -> MySQL inserts document rows in one operation
 ```
 
 The backend never receives the file bodies. If an upload fails, the frontend retries only that S3 upload and does not create another participant.
@@ -143,11 +142,11 @@ The metadata removal and an S3 cleanup record commit together. S3 deletion follo
 Frontend parses spreadsheet
   -> one compact { headers, data } request
 Backend validates allowed headers and rows
-  -> PostgreSQL transaction validates uniqueness, inserts all rows, and allocates serial numbers
+  -> MySQL transaction validates uniqueness, inserts all rows, and allocates serial numbers
 Backend returns success, or compact row errors after rolling back the entire import
 ```
 
-The backend rejects more than 200 rows. Active participant names are compared case-insensitively after trimming. Phone numbers are compared after trimming only. Soft-deleted rows do not reserve either value. A duplicate against active PostgreSQL rows or within the submitted batch rejects the complete import; no valid subset is inserted. The backend must not generate documents or signed URLs. The database, not `max(serial_number) + 1` in application code, owns serial allocation so concurrent imports cannot duplicate values.
+The backend rejects more than 200 rows. Active participant names are compared case-insensitively after trimming. Phone numbers are compared after trimming only. Soft-deleted rows do not reserve either value. A duplicate against active MySQL rows or within the submitted batch rejects the complete import; no valid subset is inserted. The backend must not generate documents or signed URLs. Bulk import must allocate consecutive serial numbers above the current maximum in one transaction and handle concurrent writes safely.
 
 ### 4.4 Export
 
@@ -181,7 +180,7 @@ Phase A — metadata
 1. Frontend -> backend: course payload without file bytes
 2. Backend validates Sanity references and payload
 3. Backend -> Sanity: creates course document without staged assets
-4. Backend -> PostgreSQL: inserts thin mirror using returned sanity_id
+4. Backend -> MySQL: inserts thin mirror using returned sanity_id
 5. Backend -> frontend: course identity and upload state
 
 Phase B — direct staging
@@ -205,19 +204,19 @@ The backend streams the S3 object body into the Sanity upload request without re
 
 Files are processed sequentially by default to keep peak Lambda memory predictable. The browser may upload directly to S3 concurrently.
 
-Phase A must compensate if PostgreSQL mirror creation fails after Sanity creation, or leave an explicit recoverable state. Finalization must be idempotent: retrying the same course/key combination must not create another course or attach duplicate gallery entries.
+Phase A must compensate if MySQL mirror creation fails after Sanity creation, or leave an explicit recoverable state. Finalization must be idempotent: retrying the same course/key combination must not create another course or attach duplicate gallery entries.
 
 Course type, class type, and certificate validity are strong single references in the updated Sanity course schema.
 
 ### 6.2 Edit course
 
-Non-file edits require one backend request that patches Sanity and updates the PostgreSQL mirror. File additions or replacements repeat Phases B and C against the existing course. The finalization payload explicitly identifies additions, replacements, and removals; unspecified assets remain unchanged. On replacement, Sanity is patched to the new asset first and the old asset is then deleted.
+Non-file edits require one backend request that patches Sanity and updates the MySQL mirror. File additions or replacements repeat Phases B and C against the existing course. The finalization payload explicitly identifies additions, replacements, and removals; unspecified assets remain unchanged. On replacement, Sanity is patched to the new asset first and the old asset is then deleted.
 
 ### 6.3 Course reads
 
 - List: frontend reads Sanity directly.
 - Content detail: frontend reads Sanity directly.
-- Operational relationships: backend reads the PostgreSQL mirror.
+- Operational relationships: backend reads the MySQL mirror.
 
 This avoids maintaining and transferring a second copy of rich course content.
 
@@ -225,7 +224,7 @@ This avoids maintaining and transferring a second copy of rich course content.
 
 ### 7.1 Create schedule
 
-The backend validates the course reference and dates, then performs schedule creation and yearly batch allocation atomically in PostgreSQL. Application code must not derive the next batch with an unlocked read followed by an insert.
+The backend validates the course reference and dates, then performs schedule creation and yearly batch allocation atomically in MySQL. Application code must not derive the next batch with an unlocked read followed by an insert.
 
 ### 7.2 Schedule detail
 
@@ -243,7 +242,7 @@ One request returns the schedule and its active participants. The backend uses s
 }
 ```
 
-The exact schedule fields remain part of the API contract, but deletions are supplied as one array and applied in bulk. Participant additions use the enrollment flow. PostgreSQL prevents duplicate active membership for the same schedule and participant.
+The exact schedule fields remain part of the API contract, but deletions are supplied as one array and applied in bulk. Participant additions use the enrollment flow. MySQL prevents duplicate active membership for the same schedule and participant.
 
 ### 7.4 Enrollment list and add
 
@@ -253,11 +252,11 @@ The enrollment list is a database join across enrollment, participant, schedule,
 
 ### 8.1 Participant serial number
 
-Use a PostgreSQL sequence or identity-backed counter. Sequence values are not rolled back or reused after deletion, which matches the required monotonic behavior. The frontend never submits a serial number.
+For each create, read the maximum serial number across all participants, including soft-deleted rows, and insert the next value. Start at 1 when the table is empty. Keep the unique constraint so concurrent creates cannot store duplicate numbers; use a locked counter if concurrent writes need reliable success without a conflict retry. The frontend never submits a serial number.
 
 ### 8.2 Schedule batch number
 
-Use a PostgreSQL-owned yearly counter allocated in the same transaction as schedule creation. The key is the GMT+7 calendar year of `start_date`, and the stored value only moves forward. Deleting a schedule does not decrement it.
+Use a MySQL yearly counter row locked with `SELECT ... FOR UPDATE` in the same transaction as schedule creation. The key is the GMT+7 calendar year of `start_date`, and the stored value only moves forward. Deleting a schedule does not decrement it.
 
 ## 9. Failure and retry rules
 
@@ -273,7 +272,13 @@ Use a PostgreSQL-owned yearly counter allocated in the same transaction as sched
 
 ## 10. Implementation status
 
-Participant creation and document routes are implemented. The remaining flows in this document are targets for later work. Certificate work remains out of scope.
+`POST /login` is deployed and has been verified. `/login/new-password` and `/login/refresh` are not deployed, so first-login password changes and token refresh are not ready for frontend integration.
+
+Participant serial assignment and the `DocumentDeletion` ORM primary key have been corrected. Participant and document routes are still not a ready frontend contract: other route and response shapes differ from §5 of the API contract, and the create → presign → S3 PUT → metadata → detail → download flow has not passed its full test.
+
+Certificate work remains out of scope.
+
+The existing SQL migration files are not MySQL-compatible and need MySQL versions before applying them to a new database.
 
 ## AWS references
 

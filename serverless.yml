@@ -1,18 +1,20 @@
 service: saharaid-backoffice
-frameworkVersion: '3.22.0'
+frameworkVersion: "3.22.0"
 # Serverless 3.22 predates Python 3.12; keep other validation warnings visible.
 configValidationMode: warn
-
-plugins:
-  - serverless-python-requirements
 
 provider:
   name: aws
   runtime: python3.12
   architecture: x86_64
   region: ${env:AWS_REGION}
+  layers:
+    - arn:aws:lambda:ap-southeast-1:698609526643:layer:essential-layer:1
   environment:
-    DATABASE_URL: ${env:DATABASE_URL}
+    RDS_HOST: ${env:RDS_HOST}
+    RDS_USER: ${env:RDS_USER}
+    RDS_PASSWORD: ${env:RDS_PASSWORD}
+    RDS_DATABASE: ${env:RDS_DATABASE}
   iam:
     role:
       statements:
@@ -32,10 +34,28 @@ provider:
           - ${env:COGNITO_APP_CLIENT_ID}
 
 functions:
+  login:
+    handler: functions/login/lambda_function.lambda_handler
+    package:
+      patterns:
+        - "functions/login/**"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    environment:
+      COGNITO_APP_CLIENT_ID: ${env:COGNITO_APP_CLIENT_ID}
+    events:
+      - httpApi:
+          path: /login
+          method: post
+
   participant:
     handler: functions/participant/lambda_function.lambda_handler
-    # ponytail: direct RDS connections; raise this only with database connection capacity.
-    reservedConcurrency: ${env:PARTICIPANT_RESERVED_CONCURRENCY, 5}
+    package:
+      patterns:
+        - "functions/participant/**"
+        - "functions/documents/schemas/document.py"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
     events:
       - httpApi:
           path: /participant
@@ -60,10 +80,15 @@ functions:
 
   documents:
     handler: functions/documents/lambda_function.lambda_handler
+    package:
+      patterns:
+        - "functions/documents/**"
+        - "functions/participant/repositories/participant.py"
+        - "functions/participant/schemas/participant.py"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
     environment:
       S3_BUCKET: ${env:S3_BUCKET}
-    # ponytail: direct PostgreSQL connections; raise this only with database connection capacity.
-    reservedConcurrency: ${env:DOCUMENTS_RESERVED_CONCURRENCY, 5}
     events:
       - httpApi:
           path: /files/presign-upload
@@ -81,16 +106,8 @@ functions:
           authorizer:
             name: cognito
 
-custom:
-  pythonRequirements:
-    dockerizePip: non-linux
-    dockerRunCmdExtraArgs:
-      - --platform
-      - linux/amd64
-
 package:
+  individually: true
   patterns:
-    - '!.venv/**'
-    - '!_docs/**'
-    - '!migrations/**'
-    - '!tests/**'
+    - "!**"
+    - "shared/**"

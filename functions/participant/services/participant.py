@@ -1,6 +1,7 @@
-import uuid
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from shared.configs.config import config
+from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound
 from shared.models.participant import Participant
@@ -31,9 +32,11 @@ class ParticipantService:
 
         return GetDetailParticipantResult(participant=participant, documents=[])
 
-    def create(self, body: dict) -> Participant:
+    def create(self, body: dict, actor_id: str) -> Participant:
+        # ponytail: concurrent creates can race; use a locked counter if throughput requires it.
+        serial_number = self.repo.get_max_serial_number() + 1
+
         participant = Participant(
-            id=uuid.uuid4(),
             name=body["name"],
             identity_number=body["identity_number"],
             gender=body["gender"],
@@ -47,9 +50,8 @@ class ParticipantService:
             education=body["education"],
             cr_number=body["cr_number"],
             tax_number=body["tax_number"],
-            serial_number=body["serial_number"],
-            created_at=config.TIMESTAMP,
-            created_by=config.USER_ID,
+            serial_number=serial_number,
+            created_by=actor_id,
         )
 
         db.save(participant)
@@ -75,8 +77,10 @@ class ParticipantService:
         participant.education = body["education"]
         participant.cr_number = body["cr_number"]
         participant.tax_number = body["tax_number"]
-        participant.updated_at = config.TIMESTAMP
-        participant.updated_by = config.USER_ID
+        participant.updated_at = datetime.now(ZoneInfo("Asia/Jakarta")).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        participant.updated_by = config_module.USER_ID
 
         db.commit()
 

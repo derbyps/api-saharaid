@@ -1,7 +1,9 @@
 import os
+import ssl
 from functools import lru_cache
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.engine.interfaces import DBAPICursor
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -19,12 +21,22 @@ class Base(DeclarativeBase):
 @lru_cache(maxsize=1)
 def _session_factory() -> sessionmaker[Session]:
     engine = create_engine(
-        os.environ["DATABASE_URL"],
+        URL.create(
+            "mysql+pymysql",
+            username=os.environ["RDS_USER"],
+            password=os.environ["RDS_PASSWORD"],
+            host=os.environ["RDS_HOST"],
+            database=os.environ["RDS_DATABASE"],
+            query={"charset": "utf8mb4"},
+        ),
         pool_size=1,
         max_overflow=0,
         pool_pre_ping=True,
         pool_recycle=300,
-        connect_args={"options": "-c timezone=Asia/Jakarta"},
+        connect_args={
+            "init_command": "SET time_zone = '+07:00'",
+            "ssl": ssl.create_default_context(),
+        },
     )
     return sessionmaker(engine, expire_on_commit=False)
 

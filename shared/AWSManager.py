@@ -19,3 +19,20 @@ class S3Manager:
 
     def delete_object(self, **kwargs):
         return self.client.delete_object(Bucket=self.bucket, **kwargs)
+
+
+class CognitoManager:
+    def __init__(self, client_id: str):
+        self.client_id = client_id
+        self.client = boto3.client("cognito-idp")
+
+    def login(self, email: str, password: str) -> dict:
+        return self.client.initiate_auth(
+            ClientId=self.client_id,
+            AuthFlow="USER_PASSWORD_AUTH",
+            AuthParameters={"USERNAME": email, "PASSWORD": password},
+        )
+
+    def email_for_token(self, access_token: str) -> str:
+        attributes = self.client.get_user(AccessToken=access_token)["UserAttributes"]
+        return next((item["Value"] for item in attributes if item["Name"] == "email"), "")

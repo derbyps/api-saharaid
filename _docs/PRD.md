@@ -6,7 +6,7 @@ Saharaid Backoffice is an internal application for managing participants, instru
 
 The system uses:
 
-- Amazon RDS for PostgreSQL for operational and relational data.
+- Amazon RDS for MySQL for operational and relational data.
 - Sanity as the source of truth for course content and course media.
 - Amazon S3 for direct file upload, temporary storage, and document download.
 - Amazon Cognito for backoffice authentication, API Gateway HTTP API for protected routes, and Python AWS Lambda functions for backend operations. One Serverless service defines the functions and routes.
@@ -16,7 +16,7 @@ Certificate management is intentionally excluded until its requirements are conf
 ## 2. Product goals
 
 - Give backoffice users one place to manage training operations.
-- Keep large file bytes outside PostgreSQL and outside normal API payloads.
+- Keep large file bytes outside MySQL and outside normal API payloads.
 - Minimize backend API calls without returning unnecessary data.
 - Keep Lambda execution time and memory use bounded, especially during course asset finalization.
 - Keep Sanity credentials and all privileged database access on the backend.
@@ -24,8 +24,8 @@ Certificate management is intentionally excluded until its requirements are conf
 
 ## 3. Non-goals
 
-- Migrating all existing Sanity course data into PostgreSQL.
-- Serving course lists from PostgreSQL; the frontend reads course lists from Sanity.
+- Migrating all existing Sanity course data into MySQL.
+- Serving course lists from MySQL; the frontend reads course lists from Sanity.
 - Proxying file uploads or downloads through Lambda when a signed S3 URL can be used.
 - Amazon RDS Proxy and a public registration endpoint.
 - Certificate generation, issuance, verification, or lifecycle management.
@@ -33,39 +33,39 @@ Certificate management is intentionally excluded until its requirements are conf
 
 ## 4. Data ownership
 
-| Data | Source of truth | PostgreSQL mirror |
+| Data | Source of truth | MySQL mirror |
 | --- | --- | --- |
 | Course content and course assets | Sanity | `sanity_id`, title, and relational IDs required by backoffice operations |
 | Course theme content and icons | Sanity | `sanity_id`, title, and slug |
-| Course type, class type, and certificate-validity options | Sanity | `sanity_id` plus the labels/codes needed for PostgreSQL foreign keys |
-| Participants, instructors, schedules, and enrollments | PostgreSQL | Not applicable |
+| Course type, class type, and certificate-validity options | Sanity | `sanity_id` plus the labels/codes needed for MySQL foreign keys |
+| Participants, instructors, schedules, and enrollments | MySQL | Not applicable |
 | Participant and instructor file bytes | Amazon S3 | File metadata only |
 | Course upload staging | Amazon S3 | Upload/finalization state only when required |
 
-Sanity write tokens and privileged AWS credentials must never be exposed to the frontend. PostgreSQL stores S3 object keys, not permanent public URLs.
+Sanity write tokens and privileged AWS credentials must never be exposed to the frontend. MySQL stores S3 object keys, not permanent public URLs.
 
-All Sanity identifiers are stored as `text`, not UUID. The course, course-theme, course-type, class-type, and certificate-validity data involved in backoffice relationships must be migrated to their PostgreSQL mirrors before the backend goes live. There is no existing production data to reconcile.
+All Sanity identifiers are stored as strings, not UUIDs. Indexed identifiers use bounded `VARCHAR` columns in MySQL. The course, course-theme, course-type, class-type, and certificate-validity data involved in backoffice relationships must be migrated to their MySQL mirrors before the backend goes live. There is no existing production data to reconcile.
 
 ## 5. Global requirements
 
 ### 5.1 Authentication and authorization
 
-- Backoffice users are created manually in Cognito and PostgreSQL. PostgreSQL does not store passwords or refresh tokens.
+- Backoffice users are created manually in Cognito and MySQL. MySQL does not store passwords or refresh tokens.
 - Public registration is disabled; `/register` is deprecated.
 - The frontend signs in through `POST /login`; Lambda calls Cognito through boto3. Cognito manages passwords and tokens.
-- PostgreSQL stores each manually provisioned user's UUID, name, and email. Email is the current Cognito-to-database lookup key; email changes in Cognito and PostgreSQL must be coordinated.
+- MySQL stores each manually provisioned user's UUID, name, and email. Email is the current Cognito-to-database lookup key; email changes in Cognito and MySQL must be coordinated.
 - Each new teammate receives a temporary Cognito password through a secure channel, without an automated invitation email. The first login prompts the teammate to choose a new password before access tokens are returned.
 - The frontend refreshes Cognito access tokens through the backend while the refresh token is valid; it does not call Cognito directly.
 - Email delivery through Amazon SES and an in-app invitation workflow are deferred. Administrators handle account recovery manually until email delivery is configured.
-- Every backoffice API operation requires a valid Cognito access token and a matching backoffice user in PostgreSQL.
-- Privileged PostgreSQL, S3, and Sanity operations must run only on the backend.
+- Every backoffice API operation requires a valid Cognito access token and a matching backoffice user in MySQL.
+- Privileged MySQL, S3, and Sanity operations must run only on the backend.
 - Signed upload and download URLs must be short-lived and restricted to the intended object key.
 - The backend must verify that an object key belongs to the requested entity before recording or exposing it.
 
 ### 5.2 Performance and payload limits
 
 - List responses must return only fields needed by the list screen; detail-only fields and document URLs must be omitted.
-- Filtering, sorting, searching, and pagination must happen in PostgreSQL, not after loading all rows into a Lambda function.
+- Filtering, sorting, searching, and pagination must happen in MySQL, not after loading all rows into a Lambda function.
 - Every main-list screen is paginated. Backend list requests use `p` for page and `rp` for rows per page, defaulting to `p=1` and `rp=12`, and return `total`; the direct Sanity course query applies the same page defaults.
 - A request for multiple file uploads must return all required signed URLs in one response.
 - The frontend uploads and downloads file bytes directly to or from S3.
@@ -85,9 +85,9 @@ All Sanity identifiers are stored as `text`, not UUID. The course, course-theme,
 ### 5.4 Date and time policy
 
 - The system business timezone is GMT+7 (`Asia/Jakarta`).
-- PostgreSQL and backend date calculations use `Asia/Jakarta` by default.
-- Timestamp columns use `timestamptz`; timestamp values are interpreted and presented in GMT+7 while PostgreSQL preserves the underlying instant.
-- Date-only values such as date of birth and schedule dates use the PostgreSQL `date` type and have no timezone conversion.
+- MySQL connections set the session time zone to GMT+7, and backend date calculations use `Asia/Jakarta`.
+- `DATETIME` columns store GMT+7 business time without timezone information. Convert timestamp instants to GMT+7 before storing them; MySQL does not normalize `DATETIME` values.
+- Date-only values such as date of birth and schedule dates use the MySQL `date` type and have no timezone conversion.
 - Today, Yesterday, rolling-period boundaries, yearly batch resets, and default timestamps are calculated in GMT+7.
 
 ## 6. Functional requirements
@@ -162,7 +162,7 @@ The list response must not contain all participant documents or generate signed 
 - A name or phone number belonging only to a soft-deleted participant may be reused.
 - Bulk import is atomic: if any row is invalid or conflicts with an existing or submitted name or phone number, the backend inserts nothing.
 - A rejected import returns compact row-level errors without echoing the complete input.
-- Serial numbers are allocated by PostgreSQL, never by the frontend.
+- Serial numbers are allocated by MySQL, never by the frontend.
 
 #### Export
 
@@ -195,13 +195,13 @@ The list response returns document availability and identifier/key metadata only
 
 - The frontend reads the course list directly from Sanity; the backend does not provide a duplicate course-list endpoint.
 - The paginated Sanity query returns the course slice and exact total in one request.
-- Course detail is read from Sanity for content and from the backend only when operational PostgreSQL data is required.
-- PostgreSQL stores a thin mirror containing the Sanity ID, title, and relational IDs required for schedules, filtering, or integrity.
+- Course detail is read from Sanity for content and from the backend only when operational MySQL data is required.
+- MySQL stores a thin mirror containing the Sanity ID, title, and relational IDs required for schedules, filtering, or integrity.
 
 #### Create course
 
 - The frontend sends course fields without file bytes to the backend.
-- The backend validates the payload, creates the Sanity course document, and creates its PostgreSQL mirror.
+- The backend validates the payload, creates the Sanity course document, and creates its MySQL mirror.
 - The frontend requests signed S3 upload URLs once for all gallery images and the brochure.
 - The frontend uploads files directly to S3.
 - The frontend calls one finalization endpoint with the staged object metadata.
@@ -210,13 +210,13 @@ The list response returns document availability and identifier/key metadata only
 - The backend streams each S3 object to the Sanity asset endpoint, patches the Sanity course with the resulting asset references, and marks finalization complete.
 - The backend verifies staged S3 object size and content type before sending it to Sanity.
 - Successfully finalized temporary S3 objects are deleted immediately.
-- A retried finalization request must not create duplicate course documents or duplicate PostgreSQL mirrors.
+- A retried finalization request must not create duplicate course documents or duplicate MySQL mirrors.
 
 Supported course content follows the Sanity schema supplied for this project: title, slug, themes, course mode, duration, overview, objective, outline, requirement, gallery, related courses, brochure, and recommended audience. Sanity will also contain strong single-reference fields for course type, class type, and certificate validity.
 
 #### Edit course
 
-- Editing non-file fields updates Sanity and the PostgreSQL mirror in one backend operation.
+- Editing non-file fields updates Sanity and the MySQL mirror in one backend operation.
 - New or replacement files use the same S3 staging and finalization flow as creation.
 - A replacement asset takes the place of the old Sanity asset. The old asset is removed only after the course successfully references the replacement.
 
@@ -232,7 +232,7 @@ Supported course content follows the Sanity schema supplied for this project: ti
 #### Create and edit schedule
 
 - A schedule references one course.
-- Its batch number is assigned atomically by PostgreSQL for the GMT+7 calendar year of `start_date`.
+- Its batch number is assigned atomically by MySQL for the GMT+7 calendar year of `start_date`.
 - The user can edit schedule fields and remove enrollment membership in the same request.
 - The edit payload may include `deleted_participant_ids`, an array of participant UUIDs to remove from the schedule.
 - Participant removals must be applied in bulk, not with one backend request per participant. Additions use the enrollment flow.
@@ -242,7 +242,7 @@ Supported course content follows the Sanity schema supplied for this project: ti
 - The user can view which participants are enrolled and which schedule/class they belong to.
 - The list supports oldest first, newest first, participant name A–Z, and participant name Z–A sorting.
 - The user can add multiple selected participants to one schedule in one request.
-- Duplicate active enrollment of the same participant in the same schedule must be prevented by PostgreSQL.
+- Duplicate active enrollment of the same participant in the same schedule must be prevented by MySQL.
 - Enrollment data is the relationship between participant and schedule; a second overlapping model is not required.
 
 ### 6.6 Certificates
@@ -264,5 +264,5 @@ Certificate requirements are deferred. No certificate UI, API, schema, file slot
 - Bulk import rejects more than 200 rows and rolls back the complete request on any row error.
 - Course gallery and brochure constraints are verified against the actual staged S3 objects.
 - Temporary course objects are absent from S3 after successful finalization.
-- A new teammate cannot receive access tokens until the temporary-password challenge is completed and the Cognito email matches a PostgreSQL user.
+- A new teammate cannot receive access tokens until the temporary-password challenge is completed and the Cognito email matches a MySQL user.
 - Certificate functionality remains absent until approved.

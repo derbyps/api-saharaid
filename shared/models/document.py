@@ -31,7 +31,7 @@ class Document(Base):
 class DocumentDeletion(Base):
     __tablename__ = "document_deletions"
 
-    document_id: Mapped[str] = mapped_column(String)
+    document_id: Mapped[str] = mapped_column(String, primary_key=True)
     participant_id: Mapped[str] = mapped_column(String)
     s3_key: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[str] = mapped_column(
