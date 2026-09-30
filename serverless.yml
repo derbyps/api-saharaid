@@ -25,6 +25,7 @@ provider:
             - s3:DeleteObject
           Resource: arn:aws:s3:::${env:S3_BUCKET}/documents/participant/*
   httpApi:
+    cors: true
     authorizers:
       cognito:
         type: jwt

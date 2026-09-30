@@ -38,7 +38,10 @@ def _json_default(value):
 def return_response(status: int, data: dict) -> dict:
     return {
         "statusCode": status,
-        "headers": {"content-type": "application/json"},
+        "headers": {
+            "content-type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+        },
         "body": json.dumps(data, default=_json_default),
     }
 
@@ -101,6 +104,7 @@ def current_user_id(event: dict) -> UUID:
     )
     if user_id is None:
         raise HttpError(403, "USER_NOT_FOUND", "Backoffice user not found")
+
     return user_id
 
 
