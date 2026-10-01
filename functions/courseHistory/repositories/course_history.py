@@ -14,10 +14,7 @@ class ParticipantRepository:
             db.session.execute(
                 select(Course)
                 .select_from(Course)
-                .where(
-                    (Course.is_deleted.is_(False))
-                    & (Course.id == func.uuid_to_bin(participant_id))
-                )
+                .where((Course.is_deleted.is_(False)) & (Course.id == participant_id))
             ).first(),
             DetailParticipantRow,
         )

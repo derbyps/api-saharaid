@@ -33,7 +33,10 @@ class ParticipantService:
         return GetDetailParticipantResult(participant=participant, documents=[])
 
     def create(self, body: dict, actor_id: str) -> Participant:
+        print("create 1", body)
         serial_number = self.repo.get_max_serial_number() + 1
+
+        print("create 2", serial_number)
 
         participant = Participant(
             name=body["name"],
@@ -53,13 +56,19 @@ class ParticipantService:
             created_by=actor_id,
         )
 
+        print("create 3")
+
         db.save(participant)
+        print("create 4")
         db.commit()
+        print("create 5")
 
         return participant
 
     def update(self, participant_id: str, body: dict) -> Participant:
+        print("haiiiii update")
         participant = Participant.get_detail(participant_id)
+        print("participant nicccc", participant)
         if not participant:
             raise NotFound("PARTICIPANT_NOT_FOUND")
 

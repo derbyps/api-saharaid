@@ -74,7 +74,7 @@ functions:
           authorizer:
             name: cognito
       - httpApi:
-          path: /participant
+          path: /participant/{id}
           method: put
           authorizer:
             name: cognito

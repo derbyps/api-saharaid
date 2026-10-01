@@ -58,7 +58,7 @@ class InstructorRepository:
                 .select_from(Instructor)
                 .where(
                     (Instructor.is_deleted.is_(False))
-                    & (Instructor.id == func.uuid_to_bin(instructor_id))
+                    & (Instructor.id == instructor_id)
                 )
             ).first(),
             DetailInstructorRow,

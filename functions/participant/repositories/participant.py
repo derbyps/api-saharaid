@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 
 from shared.configs.db import db
 from shared.models.participant import Participant
@@ -58,16 +58,38 @@ class ParticipantRepository:
         self, participant_id: str
     ) -> DetailParticipantRow | None:
 
+        query = (
+            select(
+                Participant.id,
+                Participant.name,
+                Participant.identity_number,
+                Participant.gender,
+                Participant.phone_number,
+                Participant.email,
+                Participant.date_of_birth,
+                Participant.religion,
+                Participant.address,
+                Participant.job_position,
+                Participant.job_company,
+                Participant.education,
+                Participant.cr_number,
+                Participant.tax_number,
+                Participant.serial_number,
+                Participant.created_at,
+                Participant.updated_at,
+            )
+            .select_from(Participant)
+            .where(
+                (Participant.is_deleted == False) & (Participant.id == participant_id)
+            )
+        )
+
+        print("participant_id===", participant_id)
         participant = serialize(
-            db.session.execute(
-                select(Participant)
-                .select_from(Participant)
-                .where(
-                    (Participant.is_deleted.is_(False))
-                    & (Participant.id == func.uuid_to_bin(participant_id))
-                )
-            ).first(),
+            db.session.execute(query).first(),
             DetailParticipantRow,
         )
+
+        print("participant===", participant)
 
         return participant

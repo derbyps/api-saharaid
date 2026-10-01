@@ -7,6 +7,7 @@ from ..services.participant import ParticipantService
 
 
 def update_participant_handler(event: dict) -> dict:
+    print("coba ya 1")
     participant_id = (event.get("pathParameters") or {}).get("id")
     if not participant_id:
         return util.return_response(400, {})

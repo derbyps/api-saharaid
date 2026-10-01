@@ -6,7 +6,7 @@ from functions.documents.schemas.document import DocumentMetadataRow
 class ParticipantRow(TypedDict):
     id: str
     serial_number: int
-    name: int
+    name: str
     phone_number: str
     email: str
     created_at: str
