@@ -48,3 +48,6 @@ def create_participant_handler(event: dict) -> dict:
     }
 
     return util.return_response(201, dict(response))
+
+
+#
