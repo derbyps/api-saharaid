@@ -7,7 +7,7 @@ from shared.configs.db import Base
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id: Mapped[str] = mapped_column(
         String,

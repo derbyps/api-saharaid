@@ -6,7 +6,7 @@ from shared.configs.db import Base
 
 
 class Document(Base):
-    __tablename__ = "documents"
+    __tablename__ = "document"
 
     id: Mapped[str] = mapped_column(
         String,

@@ -6,7 +6,7 @@ from shared.configs.db import Base, db
 
 
 class Participant(Base):
-    __tablename__ = "participants"
+    __tablename__ = "participant"
 
     id: Mapped[str] = mapped_column(
         String,
