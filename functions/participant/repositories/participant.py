@@ -48,7 +48,9 @@ class ParticipantRepository:
             .where(Participant.is_deleted == False)
         )
 
-        query = filter_by_created(filter_param, now, query)
+        if filter_param:
+            query = filter_by_created(filter_param, now, query)
+
         query = sorting_by(params, query)
         query = query.limit(rp).offset(offset)
 
