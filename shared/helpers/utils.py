@@ -18,7 +18,7 @@ def get_s3_signed_url(
         url = s3_client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": os.getenv("S3_RESOURCES_BUCKET"),
+                "Bucket": os.getenv("S3_BUCKET"),
                 "Key": object_key,
             },
             ExpiresIn=int(ttl.total_seconds()),
