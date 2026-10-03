@@ -17,11 +17,11 @@ create table
     serial_number bigint generated always as identity unique,
     is_deleted boolean not null default false,
     deleted_at timestamptz,
-    deleted_by uuid references public.users (id),
+    deleted_by uuid references public.user (id),
     created_at timestamptz not null default now (),
-    created_by uuid not null references public.users (id),
+    created_by uuid not null references public.user (id),
     updated_at timestamptz,
-    updated_by uuid references public.users (id)
+    updated_by uuid references public.user (id)
   );
 
 create unique index participants_active_name_key on public.participant (lower(btrim (name)))

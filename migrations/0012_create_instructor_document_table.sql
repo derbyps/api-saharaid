@@ -9,5 +9,5 @@ create table
     file_size bigint not null check (file_size between 1 and 1048576),
     last_modified_at timestamptz not null,
     uploaded_at timestamptz not null default now (),
-    created_by uuid not null references public.users (id)
+    created_by uuid not null references public.user (id)
   );

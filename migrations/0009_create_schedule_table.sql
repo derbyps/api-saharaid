@@ -15,12 +15,12 @@ create table if not exists public.schedule (
   batch_year smallint generated always as
     (extract(year from start_date)::smallint) stored,
   is_deleted boolean not null default false,
-  created_by uuid not null references public.users (id),
+  created_by uuid not null references public.user (id),
   created_at timestamptz not null default now(),
   updated_at timestamptz,
-  updated_by uuid references public.users (id),
+  updated_by uuid references public.user (id),
   deleted_at timestamptz,
-  deleted_by uuid references public.users (id),
+  deleted_by uuid references public.user (id),
 
   constraint schedule_date_range_check check (end_date >= start_date),
   constraint schedule_year_batch_key unique (batch_year, batch)
