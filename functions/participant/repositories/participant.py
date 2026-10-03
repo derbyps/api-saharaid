@@ -27,12 +27,8 @@ class ParticipantRepository:
         params: GetParticipantsParams,
     ) -> list[ParticipantRow]:
 
-        filter_param = params.get("created") or None
-
         p = params.get("p") or 1
         rp = params.get("rp") or 25
-
-        now = datetime.now(ZoneInfo("Asia/Jakarta"))
 
         offset = (p - 1) * rp
 
@@ -69,7 +65,13 @@ class ParticipantRepository:
             .where(Participant.is_deleted == False)
         )
 
+        search = params.get("search")
+        if search:
+            query = query.where(Participant.name.like(f"%{search}%"))
+
+        filter_param = params.get("created")
         if filter_param:
+            now = datetime.now(ZoneInfo("Asia/Jakarta"))
             query = filter_by_created(filter_param, now, query)
 
         query = sorting_by(params, query)
