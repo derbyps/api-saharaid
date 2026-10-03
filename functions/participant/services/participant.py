@@ -16,10 +16,8 @@ class ParticipantService:
         self.repo = ParticipantRepository()
 
     def get_list(self, params: GetParticipantsParams) -> GetParticipantsResult:
-        p = params.get("p") or 1
-        rp = params.get("rp") or 25
 
-        participants = self.repo.get_participants(offset=((p - 1) * rp), limit=rp)
+        participants = self.repo.get_participants(params)
         total_data = self.repo.get_total_data_participants()
 
         return GetParticipantsResult(participants=participants, total_data=total_data)

@@ -1,9 +1,14 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from sqlalchemy import func, select
 
 from shared.configs.db import db
 from shared.models.participant import Participant
 from shared.util import serialize
 
+from ..helpers.utils import filter_by_created, sorting_by
+from ..schemas.event import GetParticipantsParams
 from ..schemas.participant import DetailParticipantRow, ParticipantRow
 
 
@@ -16,7 +21,20 @@ class ParticipantRepository:
             or 0
         )
 
-    def get_participants(self, offset: int, limit: int) -> list[ParticipantRow]:
+    def get_participants(
+        self,
+        params: GetParticipantsParams,
+    ) -> list[ParticipantRow]:
+
+        filter_param = params.get("created") or "last_hour"
+        sort_param = params.get("sort") or "newest"
+
+        p = params.get("p") or 1
+        rp = params.get("rp") or 25
+
+        now = datetime.now(ZoneInfo("Asia/Jakarta"))
+
+        offset = (p - 1) * rp
 
         query = (
             select(
@@ -28,12 +46,17 @@ class ParticipantRepository:
                 Participant.created_at,
             )
             .select_from(Participant)
-            .where(Participant.is_deleted.is_(False))
-            .limit(limit)
-            .offset(offset)
+            .where(Participant.is_deleted == False)
         )
 
-        participants = serialize(db.session.execute(query).all(), ParticipantRow)
+        query = filter_by_created(filter_param, now, query)
+        query = sorting_by(sort_param, query)
+        query = query.limit(rp).offset(offset)
+
+        participants = serialize(
+            db.session.execute(query).all(),
+            ParticipantRow,
+        )
 
         return participants
 
@@ -92,4 +115,7 @@ class ParticipantRepository:
 
         print("participant===", participant)
 
+        return participant
+        return participant
+        return participant
         return participant
