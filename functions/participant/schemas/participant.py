@@ -5,10 +5,20 @@ from functions.documents.schemas.document import DocumentMetadataRow
 
 class ParticipantRow(TypedDict):
     id: str
-    serial_number: int
     name: str
+    identity_number: str
+    gender: str
     phone_number: str
     email: str
+    date_of_birth: str
+    religion: str
+    address: str
+    job_position: str
+    job_company: str
+    education: str
+    cr_number: str
+    tax_number: str
+    serial_number: int
     created_at: str
     passport_photo: str | None
 

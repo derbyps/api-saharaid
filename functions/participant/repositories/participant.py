@@ -39,10 +39,20 @@ class ParticipantRepository:
         query = (
             select(
                 Participant.id,
-                Participant.serial_number,
                 Participant.name,
+                Participant.identity_number,
+                Participant.gender,
                 Participant.phone_number,
                 Participant.email,
+                Participant.date_of_birth,
+                Participant.religion,
+                Participant.address,
+                Participant.job_position,
+                Participant.job_company,
+                Participant.education,
+                Participant.cr_number,
+                Participant.tax_number,
+                Participant.serial_number,
                 Participant.created_at,
                 Document.s3_key.label("passport_photo"),
             )

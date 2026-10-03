@@ -38,10 +38,20 @@ class ParticipantService:
             participants.append(
                 ParticipantRow(
                     id=row["id"],
-                    serial_number=row["serial_number"],
                     name=row["name"],
+                    identity_number=row["identity_number"],
+                    gender=row["gender"],
                     phone_number=row["phone_number"],
                     email=row["email"],
+                    date_of_birth=row["date_of_birth"],
+                    religion=row["religion"],
+                    address=row["address"],
+                    job_position=row["job_position"],
+                    job_company=row["job_company"],
+                    education=row["education"],
+                    cr_number=row["cr_number"],
+                    tax_number=row["tax_number"],
+                    serial_number=row["serial_number"],
                     created_at=row["created_at"],
                     passport_photo=passport_photo,
                 )
