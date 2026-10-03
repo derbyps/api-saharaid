@@ -14,8 +14,8 @@ class EnrollmentService:
         self.repo = EnrollmentRepository()
 
     def get_list(self, params: GetEnrollmentsParams) -> GetEnrollmentsResult:
-        p = params.get("p") or 1
-        rp = params.get("rp") or 25
+        p = int(params.get("p") or 1)
+        rp = int(params.get("rp") or 25)
 
         enrollments = self.repo.get_enrollments(offset=((p - 1) * rp), limit=rp)
         total_data = self.repo.get_total_data_enrollments()

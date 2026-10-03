@@ -15,8 +15,8 @@ class InstructorService:
         self.repo = InstructorRepository()
 
     def get_list(self, params: GetInstructorsParams) -> GetInstructorsResult:
-        p = params.get("p") or 1
-        rp = params.get("rp") or 25
+        p = int(params.get("p") or 1)
+        rp = int(params.get("rp") or 25)
 
         instructors = self.repo.get_instructors(offset=((p - 1) * rp), limit=rp)
         total_data = self.repo.get_total_data_instructors()

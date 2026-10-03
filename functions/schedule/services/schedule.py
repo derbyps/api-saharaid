@@ -15,8 +15,8 @@ class ScheduleService:
         self.repo = ScheduleRepository()
 
     def get_list(self, params: GetSchedulesParams) -> GetSchedulesResult:
-        p = params.get("p") or 1
-        rp = params.get("rp") or 25
+        p = int(params.get("p") or 1)
+        rp = int(params.get("rp") or 25)
 
         schedules = self.repo.get_schedules(offset=((p - 1) * rp), limit=rp)
         total_data = self.repo.get_total_data_schedules()
