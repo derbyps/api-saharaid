@@ -7,8 +7,21 @@ from shared.models.user import User
 
 from .db import db
 
+WIB = ZoneInfo("Asia/Jakarta")
 TIMESTAMP = datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S")
 USER_ID = ""
+
+
+def get_timestamp(timestamp: str | None = None) -> str:
+    if not timestamp:
+        return datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")
+
+    dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+
+    return dt.astimezone(WIB).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Base(DeclarativeBase):
@@ -28,13 +41,8 @@ class Config:
 
         # timestamp
         custom_timestamp = event.get("timestamp")
-        if custom_timestamp:
-            TIMESTAMP = custom_timestamp
 
-        else:
-            TIMESTAMP = datetime.now(ZoneInfo("Asia/Jakarta")).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        TIMESTAMP = get_timestamp(custom_timestamp)
 
         user_id = event.get("user_id")
 
