@@ -52,6 +52,7 @@ class ParticipantService:
             tax_number=body["tax_number"],
             serial_number=serial_number,
             created_by=actor_id,
+            created_at=config_module.TIMESTAMP,
         )
 
         print("create 3")
