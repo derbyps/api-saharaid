@@ -34,7 +34,7 @@ class ParticipantService:
         print("create 1", body)
         serial_number = self.repo.get_max_serial_number() + 1
 
-        print("create 2", serial_number)
+        print("create 2", serial_number, config_module.TIMESTAMP)
 
         participant = Participant(
             name=body["name"],
