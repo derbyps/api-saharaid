@@ -24,8 +24,9 @@ class ParticipantService:
 
     def get_list(self, params: GetParticipantsParams) -> GetParticipantsResult:
 
-        rows = self.participant_repo.get_participants(params)
-        total_data = self.participant_repo.get_total_data_participants()
+        query = self.participant_repo.generate_get_participants(params)
+        rows = self.participant_repo.get_participants(query, params)
+        total_data = self.participant_repo.get_total_data_participants(query)
 
         session = boto3.Session(region_name=os.getenv("REGION"))
         s3_client = session.client("s3")

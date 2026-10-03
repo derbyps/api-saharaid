@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 
 from shared.configs.db import db
 from shared.models.document import Document
@@ -22,15 +22,10 @@ class ParticipantRepository:
             or 0
         )
 
-    def get_participants(
+    def generate_get_participants(
         self,
         params: GetParticipantsParams,
-    ) -> list[ParticipantRow]:
-
-        p = params.get("p") or 1
-        rp = params.get("rp") or 25
-
-        offset = (p - 1) * rp
+    ) -> Select:
 
         query = (
             select(
@@ -74,8 +69,19 @@ class ParticipantRepository:
             now = datetime.now(ZoneInfo("Asia/Jakarta"))
             query = filter_by_created(filter_param, now, query)
 
+        return query
+
+    def get_participants(
+        self,
+        query: Select,
+        params: GetParticipantsParams,
+    ) -> list[ParticipantRow]:
+
+        p = params.get("p") or 1
+        rp = params.get("rp") or 25
+
         query = sorting_by(params, query)
-        query = query.limit(rp).offset(offset)
+        query = query.limit(rp).offset((p - 1) * rp)
 
         participants = serialize(
             db.session.execute(query).all(),
@@ -84,17 +90,11 @@ class ParticipantRepository:
 
         return participants
 
-    def get_total_data_participants(self) -> int:
+    def get_total_data_participants(self, query: Select) -> int:
 
         total_data = (
             db.session.scalars(
-                select(func.COUNT()).select_from(
-                    (
-                        select(Participant)
-                        .select_from(Participant)
-                        .where(Participant.is_deleted.is_(False))
-                    ).subquery()
-                )
+                select(func.COUNT()).select_from((query).subquery())
             ).first()
             or 0
         )
