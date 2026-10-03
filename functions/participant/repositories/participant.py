@@ -26,7 +26,7 @@ class ParticipantRepository:
         params: GetParticipantsParams,
     ) -> list[ParticipantRow]:
 
-        filter_param = params.get("created") or "last_hour"
+        filter_param = params.get("created") or None
 
         p = params.get("p") or 1
         rp = params.get("rp") or 25
