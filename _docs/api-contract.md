@@ -232,7 +232,8 @@ Query:
   "p": number,
   "rp": number,
   "created": "last_hour" | "today" | "yesterday" | "last_7_days" | "last_30_days" | "last_90_days" | "last_365_days",
-  "sort": "oldest" | "newest" | "name_asc" | "name_desc"
+  "sort_by": "created_at" | "name",
+  "order_by": "asc" | "desc"
 }
 ```
 
@@ -246,6 +247,7 @@ Default sort is `newest`. Success — `200`:
     "phone_number" : str,
     "email" : str,
     "created_at": str,
+    "passport_photo": str,
   }
 ```
 

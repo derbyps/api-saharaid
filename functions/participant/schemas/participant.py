@@ -10,6 +10,7 @@ class ParticipantRow(TypedDict):
     phone_number: str
     email: str
     created_at: str
+    passport_photo: str | None
 
 
 class GetParticipantsResult(TypedDict):

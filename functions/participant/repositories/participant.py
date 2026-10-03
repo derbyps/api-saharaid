@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 
 from shared.configs.db import db
+from shared.models.document import Document
 from shared.models.participant import Participant
 from shared.util import serialize
 
@@ -43,8 +44,18 @@ class ParticipantRepository:
                 Participant.phone_number,
                 Participant.email,
                 Participant.created_at,
+                Document.s3_key.label("passport_photo"),
             )
             .select_from(Participant)
+            .outerjoin(
+                Document,
+                (
+                    (Document.owner_id == Participant.id)
+                    & (Document.owner_type == "participant")
+                    & (Document.document_type == "passport_photo")
+                    & (Document.is_deleted == False)
+                ),
+            )
             .where(Participant.is_deleted == False)
         )
 

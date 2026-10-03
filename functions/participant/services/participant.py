@@ -1,12 +1,16 @@
-from datetime import datetime
+import os
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
+import boto3
 
 from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound
+from shared.helpers.utils import get_s3_signed_url
 from shared.models.participant import Participant
 
-from ..repositories.participant import ParticipantRepository
+from ..repositories.participant import ParticipantRepository, ParticipantRow
 from ..schemas.event import GetParticipantsParams
 from ..schemas.participant import GetDetailParticipantResult, GetParticipantsResult
 
@@ -17,8 +21,31 @@ class ParticipantService:
 
     def get_list(self, params: GetParticipantsParams) -> GetParticipantsResult:
 
-        participants = self.repo.get_participants(params)
+        rows = self.repo.get_participants(params)
         total_data = self.repo.get_total_data_participants()
+
+        session = boto3.Session(region_name=os.getenv("REGION"))
+        s3_client = session.client("s3")
+
+        participants: list[ParticipantRow] = []
+        for row in rows:
+            passport_photo = None
+            if row.get("passport_photo"):
+                passport_photo = get_s3_signed_url(
+                    s3_client, row.get("passport_photo") or "", timedelta(days=1)
+                )
+
+            participants.append(
+                ParticipantRow(
+                    id=row["id"],
+                    serial_number=row["serial_number"],
+                    name=row["name"],
+                    phone_number=row["phone_number"],
+                    email=row["email"],
+                    created_at=row["created_at"],
+                    passport_photo=passport_photo,
+                )
+            )
 
         return GetParticipantsResult(participants=participants, total_data=total_data)
 
@@ -91,4 +118,9 @@ class ParticipantService:
 
         db.commit()
 
+        return participant
+        db.commit()
+
+        return participant
+        return participant
         return participant
