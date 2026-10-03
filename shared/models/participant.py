@@ -52,6 +52,7 @@ class Participant(Base):
         education: str,
         cr_number: str,
         tax_number: str,
+        serial_number: int,
         created_at: str,
         created_by: str,
         is_deleted: bool = False,
@@ -73,6 +74,7 @@ class Participant(Base):
         self.education = education
         self.cr_number = cr_number
         self.tax_number = tax_number
+        self.serial_number = serial_number
         self.is_deleted = is_deleted
         self.created_at = created_at
         self.created_by = created_by
