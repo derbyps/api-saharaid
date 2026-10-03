@@ -1,28 +1,14 @@
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
+from pytz import timezone
 from sqlalchemy.orm import DeclarativeBase, Session
 
 from shared.models.user import User
 
 from .db import db
 
-WIB = ZoneInfo("Asia/Jakarta")
-
-TIMESTAMP = datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")
+TIMESTAMP = datetime.now(timezone("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S")
 USER_ID = ""
-
-
-def get_timestamp(timestamp: str | None = None) -> str:
-    if not timestamp:
-        return datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")
-
-    dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
-
-    return dt.astimezone(WIB).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Base(DeclarativeBase):
@@ -42,10 +28,13 @@ class Config:
 
         # timestamp
         custom_timestamp = event.get("timestamp")
-        print("CUSTOM TIMESTAMP:", custom_timestamp)
+        if custom_timestamp:
+            TIMESTAMP = custom_timestamp
 
-        TIMESTAMP = get_timestamp(custom_timestamp)
-        print("CONVERTED TIMESTAMP:", TIMESTAMP)
+        else:
+            TIMESTAMP = datetime.now(timezone("Asia/Jakarta")).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
         user_id = event.get("user_id")
 
