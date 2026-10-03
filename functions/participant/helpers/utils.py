@@ -44,7 +44,7 @@ def filter_by_created(
     if created in duration:
         return query.where(Participant.created_at >= now - duration[created])
 
-    return query.where(Participant.created_at >= now - timedelta(hours=1))
+    return query
 
 
 def sorting_by(sort_param: str, query: Select) -> Select:
