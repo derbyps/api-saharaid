@@ -281,6 +281,9 @@ Success — `200`:
 Document metadata does not include `s3_key` or a signed URL.
 
 ### POST `/participant`
+
+Send a JSON body with these profile fields. `date_of_birth` is a `YYYY-MM-DD` string. Do not send `id`, `serial_number`, timestamps, or documents; the backend creates the participant first and returns its UUID for subsequent document requests.
+
 ```json
 {
   "name": str,
@@ -295,36 +298,17 @@ Document metadata does not include `s3_key` or a signed URL.
   "job_company": str,
   "education": str,
   "cr_number": str,
-  "tax_number": str,
-  "serial_number": int,
+  "tax_number": str
 }
 ```
 
+All 13 profile fields are read by the create service. The handler currently checks presence of the first 12 fields and returns `422 {}` if one is absent; it does not check `tax_number`, although the service requires it. Include `tax_number` to avoid an unhandled error. Field types and values are not validated by the current handler.
+
+Success — `201` with `{ "participant": Participant }`, including the generated `id` and `serial_number`.
 
 ### PUT `/participant/{id}`
 
-Both use:
-
-```json
-{
-  "name": str,
-  "identity_number": str,
-  "gender": str,
-  "phone_number": str,
-  "email": str,
-  "date_of_birth": str,
-  "religion": str,
-  "address": str,
-  "job_position": str,
-  "job_company": str,
-  "education": str,
-  "cr_number": str,
-  "tax_number": str,
-  "serial_number": int,
-}
-```
-
-`POST` returns `{ participant: Participant }` with `201`; `PUT` returns it with `200`.
+The update service reads the same 13 profile fields. Success — `200` with `{ "participant": Participant }`.
 
 The backend assigns `serial_number` as one greater than the highest existing value, including soft-deleted participants. The frontend does not send it.
 
@@ -433,7 +417,7 @@ Search applies to course title only.
 ```json
 {
   "owner": {
-    "type": "participant" | "instructor" | "course",
+    "type": string,
     "id": string
   },
   "files": [
@@ -441,14 +425,13 @@ Search applies to course title only.
       "filename": string,
       "content_type": string,
       "file_size": number,
-      "document_type": string, // participant/instructor only
-      "asset_type": "gallery" | "brochure", // course only
+      "document_type": string,
     }
   ]
 };
 ```
 
-The backend verifies the active owner, count, declared type, and declared size before signing. Course requests allow at most six gallery images. Success — `200`:
+The backend requires an authenticated user and validates the owner UUID, safe owner and document type path segments, file count, declared content type, and declared size before signing. The key is `docs/{owner_type}/{owner_id}/{document_type}`. Presigning does not check whether the owner exists; the metadata or finalization request must verify ownership. Success — `200`:
 
 ```json
 {
@@ -466,37 +449,25 @@ The frontend uploads bytes directly to each URL using `PUT` and the same `Conten
 
 ### POST `/documents`
 
-Records participant or instructor document metadata after direct upload.
+Current implementation records participant document rows after direct upload. Instructor owners are rejected.
 
 ```json
 {
   "owner": {
-    "type": "participant" | "instructor",
+    "type": "participant",
     "id": string,
   },
-  "documents": [
+  "files": [
     {
       "document_type": string,
-      "s3_key": string,
-      "original_filename": string,
-      "content_type": string,
-      "file_size": number,
-      "last_modified_at": string,
+      "s3_key": string
     }
   ],
-  "remove_ids": string[],
+  "removed_ids": string[],
 }
 ```
 
-The backend verifies ownership and performs S3 `HEAD` for every new object. The actual content type and size must match the allowed slot and request metadata. Additions and removals are committed as one metadata operation. Success — `200`:
-
-```ts
-{ documents: DocumentMetadata[] }
-```
-
-If S3 cleanup fails after the metadata commit, the backend returns `502 S3_CLEANUP_PENDING`. Retry `POST /documents` with the same owner, `documents: []`, and the same `remove_ids`.
-
-Participant slots are optional and accept at most one file per document type. Instructor supports one optional PDF `curiculum_vitae`. Every file is limited to 1 MiB.
+The service checks that the participant exists, deletes document rows matching `removed_ids`, inserts rows for `files`, and commits. Success — `201 {}`. It does not check that removal IDs belong to the owner, validate file metadata or S3 keys, inspect S3 objects, or delete S3 bytes. The current ORM stores `owner_id`, `owner_type`, `document_type`, and `s3_key`; it does not match the `documents` SQL migration, which requires `participant_id` and additional file metadata columns. Therefore a successful metadata write against that schema is not verified. Replacing a document using the same S3 key may also conflict with the unique key constraint.
 
 ### POST `/files/presign-download`
 

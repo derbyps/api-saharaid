@@ -1,8 +1,9 @@
+import traceback
 from functools import wraps
+from typing import cast
 
 from shared import util
 from shared.configs.db import db
-from shared.schemas.response import ErrorResponse
 from shared.exception import (
     AppException,
     BadRequest,
@@ -17,11 +18,12 @@ from shared.exception import (
     Unauthorized,
     UnprocessableEntity,
 )
+from shared.schemas.response import ErrorResponse
 
 
 def _error_response(status: int, code: str, message: str) -> dict:
     response: ErrorResponse = {"error": message, "errCode": code}
-    return util.return_response(status, response)
+    return util.return_response(status, cast(dict, response))
 
 
 def handle_errors(handler):
@@ -70,6 +72,8 @@ def handle_errors(handler):
             return _error_response(500, exc.code, str(exc))
 
         except:
+            traceback.print_exc()
+
             return _error_response(500, "INTERNAL_ERROR", "Internal server error")
         finally:
             db.close()

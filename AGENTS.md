@@ -35,4 +35,9 @@ Follow the N-layer flow: Lambda dispatches to a handler; the handler parses and 
 
 ## Verification
 
-Add one focused runnable check for nontrivial branches or security-sensitive logic. Test the public handler path and mock AWS calls; verify database lookup precedes Cognito authentication. After every code change, run Astral `ty check` on the changed Python files or feature directory and fix its diagnostics. Also run the focused test and `git diff --check`. If a broader test suite fails for an existing environment issue, report the exact blocker.
+Add one focused runnable check for nontrivial branches or security-sensitive logic. Test the public handler path and mock AWS calls; verify database lookup precedes Cognito authentication. After every code change:
+
+- Run Astral `ty check` on the changed Python files or feature directory and fix its diagnostics.
+- Run `ruff check` and `ruff format --check` on the changed Python files or feature directory and fix their diagnostics.
+
+Also run the focused test and `git diff --check`. If a broader test suite fails for an existing environment issue, report the exact blocker.

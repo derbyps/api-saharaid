@@ -1,13 +1,6 @@
 from typing import TypedDict
 
 
-class PresignUploadFile(TypedDict):
-    filename: str
-    content_type: str
-    file_size: int
-    document_type: str
-
-
 class DocumentInput(TypedDict):
     document_type: str
     s3_key: str

@@ -111,11 +111,11 @@ This is one request per result page. It must not call Sanity once per enrollment
 3. Backend  -> Frontend returns participant UUID
 
 4. Frontend -> one presign request containing all selected files
-5. Backend  -> validates owner and files, returns one signed URL per file
+5. Backend  -> validates owner ID and files, returns one signed URL per file
 6. Frontend -> S3 uploads directly, concurrently with a small client-side limit
 
-7. Frontend -> one document request containing all successful upload metadata
-8. Backend  -> MySQL inserts document rows in one operation
+7. Frontend -> one document request containing each successful upload's document type and S3 key
+8. Backend  -> inserts document rows and commits
 ```
 
 The backend never receives the file bodies. If an upload fails, the frontend retries only that S3 upload and does not create another participant.
@@ -124,17 +124,17 @@ The S3 bucket CORS policy must allow the frontend origin to send direct `PUT` re
 
 Participant create and update use partial unique database indexes for active rows: `lower(trim(name))` for names and `trim(phone_number)` for phone numbers. Soft-deleted rows are excluded from both indexes.
 
-The metadata request contains the participant UUID, document type, returned S3 key, original filename, content type, size, and last-modified timestamp. Before inserting metadata, the backend performs an S3 `HEAD` request and validates object-key ownership, actual size, and actual content type.
+The current `POST /documents` request contains the participant owner UUID and a `files` array of document type and S3 key. The service checks that the participant exists, then writes rows with owner ID, owner type, document type, and S3 key. It does not perform an S3 `HEAD` request or validate the S3 key, content type, or file size. The ORM columns do not match the existing SQL migration's participant foreign key and file metadata columns; the metadata write has not been verified against that schema.
+
+Presigned document keys use `docs/{owner_type}/{owner_id}/{document_type}`. `owner_type` and `document_type` must be safe path segments; presigning accepts new types without a backend owner-type allowlist.
 
 All eight participant document types are optional and limited to 1 MiB. `passport_photo` accepts JPEG or PNG; `curiculum_vitae` accepts PDF; the other six types accept JPEG, PNG, or PDF.
 
 ### 4.2 Edit participant and documents
 
-Profile changes use one participant update. Document changes use the same single presign request for additions and one batched metadata request containing additions and removal IDs.
+Profile changes use one participant update. The current document request accepts additions in `files` and removal IDs in `removed_ids`; the service applies both in one database commit.
 
-For removals, ownership must be verified before deleting the S3 object and metadata row. A database failure must not silently leave metadata pointing to a deleted object.
-
-The metadata removal and an S3 cleanup record commit together. S3 deletion follows the commit; if it fails, retry the removal using the same `remove_ids` without resending additions.
+The current removal query deletes document rows by ID without checking that they belong to the supplied owner. It does not delete S3 objects or create S3 cleanup records, so removed rows can leave objects in S3.
 
 ### 4.3 Bulk import
 
@@ -262,8 +262,7 @@ Use a MySQL yearly counter row locked with `SELECT ... FOR UPDATE` in the same t
 
 - Create entity first, then upload files; a failed upload never requires recreating the entity.
 - Presign operations are safe to retry.
-- Metadata writes reject keys outside the entity's S3 prefix.
-- Document metadata writes verify the actual S3 object with `HEAD` before insertion.
+- Document metadata writes currently do not check S3 key ownership or verify uploaded objects with `HEAD`.
 - Batch writes return a single request result; they do not trigger frontend request loops.
 - Course finalization is retry-safe and tied to one existing course identity.
 - Temporary course objects are deleted from S3 immediately after successful Sanity finalization.
@@ -275,6 +274,8 @@ Use a MySQL yearly counter row locked with `SELECT ... FOR UPDATE` in the same t
 `POST /login` is deployed and has been verified. `/login/new-password` and `/login/refresh` are not deployed, so first-login password changes and token refresh are not ready for frontend integration.
 
 Participant serial assignment and the `DocumentDeletion` ORM primary key have been corrected. Participant and document routes are still not a ready frontend contract: other route and response shapes differ from §5 of the API contract, and the create → presign → S3 PUT → metadata → detail → download flow has not passed its full test.
+
+`POST /documents` currently accepts `files` and `removed_ids` and returns `201 {}`. It stores only document type and S3 key with a polymorphic owner in the ORM, while the SQL migration requires a participant foreign key and more metadata. Removals are not owner-scoped and do not clean up S3 objects.
 
 Certificate work remains out of scope.
 
