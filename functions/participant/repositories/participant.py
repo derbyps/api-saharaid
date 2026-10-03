@@ -77,8 +77,8 @@ class ParticipantRepository:
         params: GetParticipantsParams,
     ) -> list[ParticipantRow]:
 
-        p = params.get("p") or 1
-        rp = params.get("rp") or 25
+        p = int(params.get("p") or 1)
+        rp = int(params.get("rp") or 25)
         offset = (p - 1) * rp
 
         query = sorting_by(params, query)
