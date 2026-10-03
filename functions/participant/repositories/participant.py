@@ -79,9 +79,10 @@ class ParticipantRepository:
 
         p = params.get("p") or 1
         rp = params.get("rp") or 25
+        offset = (p - 1) * rp
 
         query = sorting_by(params, query)
-        query = query.limit(rp).offset((p - 1) * rp)
+        query = query.limit(rp).offset(offset)
 
         participants = serialize(
             db.session.execute(query).all(),
