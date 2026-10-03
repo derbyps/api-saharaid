@@ -27,7 +27,6 @@ class ParticipantRepository:
     ) -> list[ParticipantRow]:
 
         filter_param = params.get("created") or "last_hour"
-        sort_param = params.get("sort") or "newest"
 
         p = params.get("p") or 1
         rp = params.get("rp") or 25
@@ -50,7 +49,7 @@ class ParticipantRepository:
         )
 
         query = filter_by_created(filter_param, now, query)
-        query = sorting_by(sort_param, query)
+        query = sorting_by(params, query)
         query = query.limit(rp).offset(offset)
 
         participants = serialize(

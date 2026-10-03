@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import Select
+from sqlalchemy import Select, text
 
 from shared.models.participant import Participant
+
+from ..schemas.event import GetParticipantsParams
 
 WIB = ZoneInfo("Asia/Jakarta")
 
@@ -47,16 +49,18 @@ def filter_by_created(
     return query
 
 
-def sorting_by(sort_param: str, query: Select) -> Select:
-    if sort_param == "newest":
-        query = query.order_by(Participant.created_at.desc())
-    elif sort_param == "oldest":
-        query = query.order_by(Participant.created_at.asc())
-    elif sort_param == "name_asc":
-        query = query.order_by(Participant.name.asc())
-    elif sort_param == "name_desc":
-        query = query.order_by(Participant.name.desc())
+def sorting_by(params: GetParticipantsParams, query: Select) -> Select:
+    order_by = params.get("order_by") or "asc"
+    sorted_by = params.get("sort_by") or "created_at"
 
-    return query
+    sort_option = {
+        "created_at": "created_at",
+        "name": "name",
+    }
 
-    return query
+    sort_by = sort_option.get(sorted_by.lower()) or "created_at"
+
+    if order_by == "asc":
+        return query.order_by(text(f"{sort_by} ASC"))
+
+    return query.order_by(text(f"{sort_by} DESC"))
