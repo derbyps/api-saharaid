@@ -1,13 +1,13 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from pytz import timezone
 from sqlalchemy.orm import DeclarativeBase, Session
 
 from shared.models.user import User
 
 from .db import db
 
-TIMESTAMP = datetime.now(timezone("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S")
+TIMESTAMP = datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S")
 USER_ID = ""
 
 
@@ -32,7 +32,7 @@ class Config:
             TIMESTAMP = custom_timestamp
 
         else:
-            TIMESTAMP = datetime.now(timezone("Asia/Jakarta")).strftime(
+            TIMESTAMP = datetime.now(ZoneInfo("Asia/Jakarta")).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
 
