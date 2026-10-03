@@ -14,6 +14,7 @@ def get_s3_signed_url(
     object_key: str,
     ttl: timedelta,
 ) -> str | None:
+    print("ssss", os.getenv("S3_BUCKET"))
     try:
         url = s3_client.generate_presigned_url(
             "get_object",
