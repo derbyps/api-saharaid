@@ -1,5 +1,5 @@
 import uuid_extensions
-from sqlalchemy import Boolean, DateTime, String, func, text
+from sqlalchemy import BigInteger, Boolean, DateTime, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.configs.db import Base
@@ -17,6 +17,9 @@ class Document(Base):
     owner_type: Mapped[str] = mapped_column(String)
     document_type: Mapped[str] = mapped_column(String)
     s3_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    content_type: Mapped[str] = mapped_column(String, nullable=False)
+    file_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    last_modified_at: Mapped[str] = mapped_column(DateTime, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
@@ -33,6 +36,9 @@ class Document(Base):
         owner_type: str,
         document_type: str,
         s3_key: str,
+        content_type: str,
+        file_size: int,
+        last_modified_at: str,
         created_at: str,
         created_by: str,
         is_deleted: bool = False,
@@ -45,6 +51,9 @@ class Document(Base):
         self.owner_type = owner_type
         self.document_type = document_type
         self.s3_key = s3_key
+        self.content_type = content_type
+        self.file_size = file_size
+        self.last_modified_at = last_modified_at
         self.is_deleted = is_deleted
         self.created_at = created_at
         self.created_by = created_by

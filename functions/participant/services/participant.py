@@ -10,19 +10,22 @@ from shared.exception import NotFound
 from shared.helpers.utils import get_s3_signed_url
 from shared.models.participant import Participant
 
+from ..repositories.document import DocumentRepository
 from ..repositories.participant import ParticipantRepository, ParticipantRow
+from ..schemas.document import DocumentsRow
 from ..schemas.event import GetParticipantsParams
 from ..schemas.participant import GetDetailParticipantResult, GetParticipantsResult
 
 
 class ParticipantService:
     def __init__(self):
-        self.repo = ParticipantRepository()
+        self.participant_repo = ParticipantRepository()
+        self.document_repo = DocumentRepository()
 
     def get_list(self, params: GetParticipantsParams) -> GetParticipantsResult:
 
-        rows = self.repo.get_participants(params)
-        total_data = self.repo.get_total_data_participants()
+        rows = self.participant_repo.get_participants(params)
+        total_data = self.participant_repo.get_total_data_participants()
 
         session = boto3.Session(region_name=os.getenv("REGION"))
         s3_client = session.client("s3")
@@ -61,15 +64,38 @@ class ParticipantService:
 
     def get_detail(self, participant_id: str) -> GetDetailParticipantResult:
 
-        participant = self.repo.get_detail_participant(participant_id)
+        participant = self.participant_repo.get_detail_participant(participant_id)
         if not participant:
             raise NotFound("PARTICIPANT_NOT_FOUND")
 
-        return GetDetailParticipantResult(participant=participant, documents=[])
+        documents_row = self.document_repo.get_documents(participant_id)
+
+        session = boto3.Session(region_name=os.getenv("REGION"))
+        s3_client = session.client("s3")
+        documents: list[DocumentsRow] = []
+        for row in documents_row:
+            url = None
+            if row.get("s3_key"):
+                url = get_s3_signed_url(
+                    s3_client, row.get("s3_key") or "", timedelta(days=1)
+                )
+
+            documents.append(
+                DocumentsRow(
+                    id=row["id"],
+                    owner_id=row["owner_id"],
+                    owner_type=row["owner_type"],
+                    document_type=row["document_type"],
+                    s3_key=url,
+                    content_type=row["content_type"],
+                )
+            )
+
+        return GetDetailParticipantResult(participant=participant, documents=documents)
 
     def create(self, body: dict, actor_id: str) -> Participant:
         print("create 1", body)
-        serial_number = self.repo.get_max_serial_number() + 1
+        serial_number = self.participant_repo.get_max_serial_number() + 1
 
         print("create 2", serial_number, config_module.TIMESTAMP)
 
@@ -131,6 +157,7 @@ class ParticipantService:
         return participant
         db.commit()
 
+        return participant
         return participant
         return participant
         return participant

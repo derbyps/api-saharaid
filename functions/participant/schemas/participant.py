@@ -1,6 +1,6 @@
 from typing import NotRequired, TypedDict
 
-from functions.documents.schemas.document import DocumentMetadataRow
+from ..schemas.document import DocumentsRow
 
 
 class ParticipantRow(TypedDict):
@@ -50,12 +50,4 @@ class DetailParticipantRow(TypedDict):
 
 class GetDetailParticipantResult(TypedDict):
     participant: DetailParticipantRow
-    documents: list[DocumentMetadataRow]
-
-
-class CreateParticipantResult(TypedDict):
-    participant: DetailParticipantRow
-
-
-class ParticipantOwnerRow(TypedDict):
-    id: str
+    documents: list[DocumentsRow]
