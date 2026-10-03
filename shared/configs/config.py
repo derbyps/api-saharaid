@@ -19,6 +19,9 @@ def get_timestamp(timestamp: str | None = None) -> str:
 
     dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+
     return dt.astimezone(WIB).strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -39,8 +42,10 @@ class Config:
 
         # timestamp
         custom_timestamp = event.get("timestamp")
+        print("CUSTOM TIMESTAMP:", custom_timestamp)
 
         TIMESTAMP = get_timestamp(custom_timestamp)
+        print("CONVERTED TIMESTAMP:", TIMESTAMP)
 
         user_id = event.get("user_id")
 
