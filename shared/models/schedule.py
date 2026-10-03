@@ -24,11 +24,11 @@ class Schedule(Base):
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
-    deleted_at: Mapped[str | None] = mapped_column(DateTime(timezone=True))
+    deleted_at: Mapped[str | None] = mapped_column(DateTime)
     deleted_by: Mapped[str | None] = mapped_column(String)
-    created_at: Mapped[str] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[str] = mapped_column(DateTime, nullable=False)
     created_by: Mapped[str] = mapped_column(String)
-    updated_at: Mapped[str | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[str | None] = mapped_column(DateTime)
     updated_by: Mapped[str | None] = mapped_column(String)
 
     def __init__(

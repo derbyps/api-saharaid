@@ -46,5 +46,5 @@ class DocumentDeletion(Base):
     participant_id: Mapped[str] = mapped_column(String)
     s3_key: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[str] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
+        DateTime, nullable=False, server_default=func.now()
     )
