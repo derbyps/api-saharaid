@@ -51,4 +51,4 @@ def create_participant_handler(event: dict) -> dict:
 
     print("hai 2")
 
-    return util.return_response(201, dict(response))
+    return util.return_response(201, {"participant": dict(response)})

@@ -51,4 +51,4 @@ def update_participant_handler(event: dict) -> dict:
         "serial_number": result.serial_number,
     }
 
-    return util.return_response(201, dict(response))
+    return util.return_response(201, {"participant": dict(response)})

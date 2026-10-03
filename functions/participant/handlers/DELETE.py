@@ -19,4 +19,4 @@ def delete_method_handler(event: dict) -> dict:
 
     db.commit()
 
-    return util.return_response(200, {})
+    return util.return_response(200, {"participant": participant})
