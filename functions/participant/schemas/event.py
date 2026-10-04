@@ -6,6 +6,7 @@ class GetParticipantsParams(TypedDict):
     p: NotRequired[int]
     rp: NotRequired[int]
     search: NotRequired[str]
+    download: NotRequired[str]
 
 
 class CreateParticipantBody(TypedDict):

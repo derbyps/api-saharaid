@@ -63,6 +63,32 @@ class ParticipantService:
 
         return GetParticipantsResult(participants=participants, total_data=total_data)
 
+    def download(self, params: GetParticipantsParams) -> list:
+
+        query = self.participant_repo.generate_get_participants(params)
+        rows = self.participant_repo.get_participants(query, params)
+
+        participants = []
+        for row in rows:
+            participants.append(
+                {
+                    "Full Name": row["name"],
+                    "Id Number / NIK / Passport": row["identity_number"],
+                    "Phone Number": row["phone_number"],
+                    "Email": row["email"],
+                    "Date of Birth": row["date_of_birth"],
+                    "Gender": row["gender"],
+                    "Religion": row["religion"],
+                    "Education": row["education"],
+                    "Job Position / Field of Study": row["job_position"],
+                    "Company / Institution": row["job_company"],
+                    "CR Number (IADC / IWCF)": row["cr_number"],
+                    "Address": row["address"],
+                }
+            )
+
+        return participants
+
     def get_detail(self, participant_id: str) -> GetDetailParticipantResult:
 
         participant = self.participant_repo.get_detail_participant(participant_id)

@@ -81,8 +81,11 @@ class ParticipantRepository:
         rp = int(params.get("rp") or 25)
         offset = (p - 1) * rp
 
+        download = params.get("download")
+
         query = sorting_by(params, query)
-        query = query.limit(rp).offset(offset)
+        if not download:
+            query = query.limit(rp).offset(offset)
 
         participants = serialize(
             db.session.execute(query).all(),

@@ -4,6 +4,7 @@ from ..schemas.event import GetParticipantsParams
 from ..schemas.participant import GetDetailParticipantResult
 from ..schemas.response import PaginatedParticipantsResponse
 from ..services.participant import ParticipantService
+from ..services.upload import UploadService
 
 
 def get_participants_handler(event: dict) -> dict:
@@ -23,6 +24,18 @@ def get_participants_handler(event: dict) -> dict:
     }
 
     return util.return_response(200, dict(response))
+
+
+def download_participants_handler(event: dict) -> dict:
+
+    params: GetParticipantsParams = event.get("queryStringParameters") or {}
+
+    participant_service = ParticipantService()
+    download_service = UploadService()
+    data_export = participant_service.download(params)
+    download_url = download_service.to_s3(data_export)
+
+    return util.return_response(200, {"url_report": download_url})
 
 
 def get_participant_detail_handler(event: dict) -> dict:
