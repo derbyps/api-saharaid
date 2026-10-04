@@ -19,7 +19,7 @@ class UploadService:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp:
             with pd.ExcelWriter(temp.name, engine="openpyxl") as writer:
-                pd_dataframe.to_excel(writer)
+                pd_dataframe.to_excel(writer, index=False)
 
             # Read the file into a BytesIO object
             with open(temp.name, "rb") as f:

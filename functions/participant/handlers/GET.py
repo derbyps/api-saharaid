@@ -35,7 +35,7 @@ def download_participants_handler(event: dict) -> dict:
     data_export = participant_service.download(params)
     download_url = download_service.to_s3(data_export)
 
-    return util.return_response(200, {"url_report": download_url})
+    return util.return_response(200, {"url": download_url})
 
 
 def get_participant_detail_handler(event: dict) -> dict:
