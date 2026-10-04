@@ -52,6 +52,8 @@ functions:
 
   participant:
     handler: functions/participant/lambda_function.lambda_handler
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
     package:
       patterns:
         - "functions/participant/**"
