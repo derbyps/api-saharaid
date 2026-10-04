@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import Select, func, select
 
 from shared.configs.db import db
+from shared.helpers.utils import convert_int
 from shared.models.document import Document
 from shared.models.participant import Participant
 from shared.util import serialize
@@ -77,8 +78,8 @@ class ParticipantRepository:
         params: GetParticipantsParams,
     ) -> list[ParticipantRow]:
 
-        p = int(params.get("p") or 1)
-        rp = int(params.get("rp") or 25)
+        p = convert_int(params.get("p") or 1)
+        rp = convert_int(params.get("rp") or 25)
         offset = (p - 1) * rp
 
         download = params.get("download")
