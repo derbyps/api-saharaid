@@ -61,4 +61,25 @@ def import_participant_handler(event: dict) -> dict:
     service = ParticipantService()
     result = service.bulk(body, str(actor_id))
 
-    return util.return_response(201, {"participants": result})
+    participants = [
+        {
+            "id": participant.id,
+            "name": participant.name,
+            "identity_number": participant.identity_number,
+            "gender": participant.gender,
+            "phone_number": participant.phone_number,
+            "email": participant.email,
+            "date_of_birth": participant.date_of_birth,
+            "religion": participant.religion,
+            "address": participant.address,
+            "job_position": participant.job_position,
+            "job_company": participant.job_company,
+            "education": participant.education,
+            "cr_number": participant.cr_number,
+            "tax_number": participant.tax_number,
+            "serial_number": participant.serial_number,
+        }
+        for participant in result
+    ]
+
+    return util.return_response(201, {"participants": participants})

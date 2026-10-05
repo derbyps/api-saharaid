@@ -16,7 +16,7 @@ from .schemas.event import GetParticipantsParams
 def lambda_handler(event, _):
     method = event.get("requestContext", {}).get("http", {}).get("method")
     params: GetParticipantsParams = event.get("queryStringParameters") or {}
-    path_param = event.get("pathParameters") or ""
+    path_param = event.get("rawPath", "")
     last_path = path_param.rstrip("/").split("/")[-1]
 
     if params.get("download"):
