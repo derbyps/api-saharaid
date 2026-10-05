@@ -1,3 +1,4 @@
+from shared.configs import config as config_module
 from shared.configs.config import config
 from shared.configs.db import db
 from shared.exception import NotFound
@@ -34,8 +35,8 @@ class InstructorService:
             phone_number=body["phone_number"],
             course_theme_id=body["course_theme_id"],
             specialization=body["specialization"],
-            created_at=config.TIMESTAMP,
-            created_by=config.USER_ID,
+            created_at=config_module.TIMESTAMP,
+            created_by=config_module.USER_ID,
         )
 
         db.save(instructor)
@@ -52,8 +53,8 @@ class InstructorService:
         instructor.phone_number = body["phone_number"]
         instructor.course_theme_id = body["course_theme_id"]
         instructor.specialization = body["specialization"]
-        instructor.updated_at = config.TIMESTAMP
-        instructor.updated_by = config.USER_ID
+        instructor.updated_at = config_module.TIMESTAMP
+        instructor.updated_by = config_module.USER_ID
 
         db.commit()
 
