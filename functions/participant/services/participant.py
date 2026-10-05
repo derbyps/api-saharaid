@@ -121,10 +121,7 @@ class ParticipantService:
         return GetDetailParticipantResult(participant=participant, documents=documents)
 
     def create(self, body: dict, actor_id: str) -> Participant:
-        print("create 1", body)
         serial_number = self.participant_repo.get_max_serial_number() + 1
-
-        print("create 2", serial_number, config_module.TIMESTAMP)
 
         participant = Participant(
             name=body["name"],
@@ -145,14 +142,45 @@ class ParticipantService:
             created_at=config_module.TIMESTAMP,
         )
 
-        print("create 3")
-
         db.save(participant)
-        print("create 4")
         db.commit()
-        print("create 5")
 
         return participant
+
+    def bulk(self, body: dict, actor_id: str) -> list[Participant]:
+        headers = body["headers"]
+        rows = body["data"]
+
+        last_serial_number = self.participant_repo.get_max_serial_number() + 1
+        participants = []
+
+        for index, row in enumerate(rows):
+            data = dict(zip(headers, row))
+
+            participant = Participant(
+                name=data["name"],
+                identity_number=data["identity_number"],
+                gender=data["gender"],
+                phone_number=data["phone_number"],
+                email=data["email"],
+                date_of_birth=data["date_of_birth"],
+                religion=data["religion"],
+                address=data["address"],
+                job_position=data["job_position"],
+                job_company=data["job_company"],
+                education=data["education"],
+                cr_number=data["cr_number"],
+                tax_number=data["tax_number"],
+                serial_number=last_serial_number + index + 1,
+                created_by=actor_id,
+                created_at=config_module.TIMESTAMP,
+            )
+
+            participants.append(participant)
+
+        self.participant_repo.bulk(participants)
+
+        return participants
 
     def update(self, participant_id: str, body: dict) -> Participant:
         print("haiiiii update")
@@ -184,6 +212,7 @@ class ParticipantService:
         return participant
         db.commit()
 
+        return participant
         return participant
         return participant
         return participant

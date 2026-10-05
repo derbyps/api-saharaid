@@ -7,7 +7,7 @@ from .handlers.GET import (
     get_participant_detail_handler,
     get_participants_handler,
 )
-from .handlers.POST import create_participant_handler
+from .handlers.POST import create_participant_handler, import_participant_handler
 from .handlers.PUT import update_participant_handler
 from .schemas.event import GetParticipantsParams
 
@@ -16,6 +16,8 @@ from .schemas.event import GetParticipantsParams
 def lambda_handler(event, _):
     method = event.get("requestContext", {}).get("http", {}).get("method")
     params: GetParticipantsParams = event.get("queryStringParameters") or {}
+    path_param = event.get("pathParameters") or ""
+    last_path = path_param.rstrip("/").split("/")[-1]
 
     if params.get("download"):
         return download_participants_handler(event)
@@ -27,6 +29,9 @@ def lambda_handler(event, _):
         return get_participants_handler(event)
 
     if method == "POST":
+        if last_path == "bulk":
+            return import_participant_handler(event)
+
         return create_participant_handler(event)
 
     if method == "PUT":

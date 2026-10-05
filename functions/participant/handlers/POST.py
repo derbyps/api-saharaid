@@ -7,8 +7,6 @@ from ..services.participant import ParticipantService
 
 
 def create_participant_handler(event: dict) -> dict:
-    print("hai 1")
-
     body = json.loads(event.get("body") or "{}")
     req_body = [
         "name",
@@ -49,6 +47,18 @@ def create_participant_handler(event: dict) -> dict:
         "serial_number": result.serial_number,
     }
 
-    print("hai 2")
-
     return util.return_response(201, {"participant": dict(response)})
+
+
+def import_participant_handler(event: dict) -> dict:
+    body = json.loads(event.get("body") or "{}")
+    req_body = ["data", "headers"]
+    for item in req_body:
+        if item not in body:
+            return util.return_response(422, {})
+
+    actor_id = util.current_user_id(event)
+    service = ParticipantService()
+    result = service.bulk(body, str(actor_id))
+
+    return util.return_response(201, {"participants": result})

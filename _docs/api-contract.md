@@ -344,11 +344,41 @@ Its serial number is never reused.
 
 ### POST `/participant/bulk`
 
-```ts
-type ParticipantBulkRequest = {
-  headers: Array<keyof ParticipantPayload>;
-  data: unknown[][]; // maximum 200 rows
-};
+```json
+{
+  "data": [
+    [
+        "Alya Putri",
+        "3273010101900001",
+        "Female",
+        "81234567890",
+        "alya@example.com",
+        "1989-12-31",
+        "Islam",
+        "Jalan Merdeka 10",
+        "Safety Officer",
+        "PT Contoh",
+        "S1",
+        "CR-12345",
+        "NPWP-12345"
+    ]
+  ],
+  "headers": [
+    "name",
+    "identity_number",
+    "gender",
+    "phone_number",
+    "email",
+    "date_of_birth",
+    "religion",
+    "address",
+    "job_position",
+    "job_company",
+    "education",
+    "cr_number",
+    "tax_number"
+  ]
+}
 ```
 
 The backend rejects duplicate headers, unknown headers, unequal row lengths, more than 200 rows, invalid values, and duplicate active name/phone values. Validation includes conflicts within the request itself.

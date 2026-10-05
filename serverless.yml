@@ -78,6 +78,11 @@ functions:
           authorizer:
             name: cognito
       - httpApi:
+          path: /participant/bulk
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
           path: /participant/{id}
           method: put
           authorizer:

@@ -145,3 +145,7 @@ class ParticipantRepository:
         print("participant===", participant)
 
         return participant
+
+    def bulk(self, participants: list[Participant]) -> None:
+        db.session.add_all(participants)
+        db.session.commit()
