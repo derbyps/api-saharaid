@@ -1,5 +1,7 @@
 from typing import NotRequired, TypedDict
 
+from ..schemas.document import DocumentsRow
+
 
 class InstructorRow(TypedDict):
     id: str
@@ -19,16 +21,6 @@ class GetInstructorsResult(TypedDict):
     total_data: int
 
 
-class DocumentsRow(TypedDict):
-    id: str
-    document_type: str
-    original_filename: str
-    content_type: str
-    file_size: int
-    last_modified_at: str
-    uploaded_at: str
-
-
 class DetailInstructorRow(TypedDict):
     id: str
     name: str
@@ -42,4 +34,5 @@ class DetailInstructorRow(TypedDict):
 
 class GetDetailInstructorResult(TypedDict):
     instructor: DetailInstructorRow
+    documents: list[DocumentsRow]
     documents: list[DocumentsRow]

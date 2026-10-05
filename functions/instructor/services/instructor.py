@@ -9,19 +9,22 @@ from shared.exception import NotFound
 from shared.helpers.utils import get_s3_signed_url
 from shared.models.instructor import Instructor
 
+from ..repositories.document import DocumentRepository
 from ..repositories.instructor import InstructorRepository, InstructorRow
+from ..schemas.document import DocumentsRow
 from ..schemas.event import GetInstructorsParams
 from ..schemas.instructor import GetDetailInstructorResult, GetInstructorsResult
 
 
 class InstructorService:
     def __init__(self):
-        self.repo = InstructorRepository()
+        self.instructor_repo = InstructorRepository()
+        self.document_repo = DocumentRepository()
 
     def get_list(self, params: GetInstructorsParams) -> GetInstructorsResult:
-        query = self.repo.generate_get_instructors(params)
-        rows = self.repo.get_instructors(params, query)
-        total_data = self.repo.get_total_data_instructors(query)
+        query = self.instructor_repo.generate_get_instructors(params)
+        rows = self.instructor_repo.get_instructors(params, query)
+        total_data = self.instructor_repo.get_total_data_instructors(query)
 
         session = boto3.Session(region_name=os.getenv("REGION"))
         s3_client = session.client("s3")
@@ -59,11 +62,33 @@ class InstructorService:
 
     def get_detail(self, instructor_id: str) -> GetDetailInstructorResult:
 
-        instructor = self.repo.get_detail_instructor(instructor_id)
+        instructor = self.instructor_repo.get_detail_instructor(instructor_id)
         if not instructor:
             raise NotFound("INSTRUCTOR_NOT_FOUND")
 
-        return GetDetailInstructorResult(instructor=instructor, documents=[])
+        documents_row = self.document_repo.get_documents(instructor_id)
+        session = boto3.Session(region_name=os.getenv("REGION"))
+        s3_client = session.client("s3")
+        documents: list[DocumentsRow] = []
+        for row in documents_row:
+            url = None
+            if row.get("s3_key"):
+                url = get_s3_signed_url(
+                    s3_client, row.get("s3_key") or "", timedelta(days=1)
+                )
+
+            documents.append(
+                DocumentsRow(
+                    id=row["id"],
+                    owner_id=row["owner_id"],
+                    owner_type=row["owner_type"],
+                    document_type=row["document_type"],
+                    s3_key=url,
+                    content_type=row["content_type"],
+                )
+            )
+
+        return GetDetailInstructorResult(instructor=instructor, documents=documents)
 
     def create(self, body: dict, actor_id: str) -> Instructor:
         instructor = Instructor(
@@ -97,4 +122,5 @@ class InstructorService:
 
         return instructor
 
+        return instructor
         return instructor
