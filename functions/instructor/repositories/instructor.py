@@ -59,11 +59,20 @@ class InstructorRepository:
 
         instructor = serialize(
             db.session.execute(
-                select(Instructor)
+                select(
+                    Instructor.id,
+                    Instructor.name,
+                    Instructor.phone_number,
+                    Instructor.email,
+                    Instructor.course_theme_id,
+                    Instructor.specialization,
+                    Instructor.created_at,
+                    User.name.label("created_by"),
+                )
                 .select_from(Instructor)
+                .join(User, User.id == Instructor.created_by)
                 .where(
-                    (Instructor.is_deleted.is_(False))
-                    & (Instructor.id == instructor_id)
+                    (Instructor.is_deleted == False) & (Instructor.id == instructor_id)
                 )
             ).first(),
             DetailInstructorRow,
