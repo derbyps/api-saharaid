@@ -1,5 +1,4 @@
 from shared.configs import config as config_module
-from shared.configs.config import config
 from shared.configs.db import db
 from shared.exception import NotFound
 from shared.models.instructor import Instructor
@@ -28,7 +27,7 @@ class InstructorService:
 
         return GetDetailInstructorResult(instructor=instructor, documents=[])
 
-    def create(self, body: dict) -> Instructor:
+    def create(self, body: dict, actor_id: str) -> Instructor:
         instructor = Instructor(
             name=body["name"],
             email=body["email"],
@@ -36,7 +35,7 @@ class InstructorService:
             course_theme_id=body["course_theme_id"],
             specialization=body["specialization"],
             created_at=config_module.TIMESTAMP,
-            created_by=config_module.USER_ID,
+            created_by=actor_id,
         )
 
         db.save(instructor)
@@ -44,7 +43,7 @@ class InstructorService:
 
         return instructor
 
-    def update(self, instructor_id: str, body: dict) -> Instructor:
+    def update(self, instructor_id: str, body: dict, actor_id: str) -> Instructor:
         instructor = Instructor.get_detail(instructor_id)
         if not instructor:
             raise NotFound("PARTICIPANT_NOT_FOUND")
@@ -54,7 +53,7 @@ class InstructorService:
         instructor.course_theme_id = body["course_theme_id"]
         instructor.specialization = body["specialization"]
         instructor.updated_at = config_module.TIMESTAMP
-        instructor.updated_by = config_module.USER_ID
+        instructor.updated_by = actor_id
 
         db.commit()
 

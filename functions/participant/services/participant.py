@@ -182,7 +182,7 @@ class ParticipantService:
 
         return participants
 
-    def update(self, participant_id: str, body: dict) -> Participant:
+    def update(self, participant_id: str, body: dict, actor_id: str) -> Participant:
         print("haiiiii update")
         participant = Participant.get_detail(participant_id)
         print("participant nicccc", participant)
@@ -209,11 +209,4 @@ class ParticipantService:
 
         db.commit()
 
-        return participant
-        db.commit()
-
-        return participant
-        return participant
-        return participant
-        return participant
         return participant

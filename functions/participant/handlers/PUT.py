@@ -31,8 +31,9 @@ def update_participant_handler(event: dict) -> dict:
         if item not in body:
             return util.return_response(422, {})
 
+    actor_id = util.current_user_id(event)
     service = ParticipantService()
-    result = service.update(participant_id, body)
+    result = service.update(participant_id, body, str(actor_id))
     response: DetailParticipantRow = {
         "id": str(result.id),
         "name": result.name,

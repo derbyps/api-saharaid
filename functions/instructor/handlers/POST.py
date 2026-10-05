@@ -19,8 +19,9 @@ def create_instructor_handler(event: dict) -> dict:
         if item not in body:
             return util.return_response(422, {})
 
+    actor_id = util.current_user_id(event)
     service = InstructorService()
-    result = service.create(body)
+    result = service.create(body, str(actor_id))
     response: DetailInstructorRow = {
         "id": str(result.id),
         "name": result.name,
