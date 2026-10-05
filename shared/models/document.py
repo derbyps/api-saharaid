@@ -17,6 +17,7 @@ class Document(Base):
     owner_type: Mapped[str] = mapped_column(String)
     document_type: Mapped[str] = mapped_column(String)
     s3_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    content_type: Mapped[str] = mapped_column(String, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
@@ -33,6 +34,7 @@ class Document(Base):
         owner_type: str,
         document_type: str,
         s3_key: str,
+        content_type: str,
         created_at: str,
         created_by: str,
         is_deleted: bool = False,
@@ -45,6 +47,7 @@ class Document(Base):
         self.owner_type = owner_type
         self.document_type = document_type
         self.s3_key = s3_key
+        self.content_type = content_type
         self.is_deleted = is_deleted
         self.created_at = created_at
         self.created_by = created_by
