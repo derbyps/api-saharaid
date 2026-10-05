@@ -82,9 +82,9 @@ class ParticipantRepository:
         rp = convert_int(params.get("rp") or 25)
         offset = (p - 1) * rp
 
-        download = params.get("download")
-
         query = sorting_by(params, query)
+
+        download = params.get("download")
         if not download:
             query = query.limit(rp).offset(offset)
 

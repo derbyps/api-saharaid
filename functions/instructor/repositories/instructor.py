@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from sqlalchemy import Select, func, select
 
 from shared.configs.db import db
@@ -6,6 +9,7 @@ from shared.models.instructor import Instructor
 from shared.models.user import User
 from shared.util import serialize
 
+from ..helpers.utils import filter_by_created, sorting_by
 from ..schemas.event import GetInstructorsParams
 from ..schemas.instructor import DetailInstructorRow, InstructorRow
 
@@ -27,6 +31,14 @@ class InstructorRepository:
             .join(User, User.id == Instructor.created_by)
             .where(Instructor.is_deleted.is_(False))
         )
+        search = params.get("search")
+        if search:
+            query = query.where(Instructor.name.like(f"%{search}%"))
+
+        filter_param = params.get("created")
+        if filter_param:
+            now = datetime.now(ZoneInfo("Asia/Jakarta"))
+            query = filter_by_created(filter_param, now, query)
 
         return query
 
@@ -38,6 +50,7 @@ class InstructorRepository:
         rp = convert_int(params.get("rp") or 25)
         offset = (p - 1) * rp
 
+        query = sorting_by(params, query)
         query = query.limit(rp).offset(offset)
 
         instructors = serialize(db.session.execute(query).all(), InstructorRow)
