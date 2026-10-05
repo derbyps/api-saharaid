@@ -2,9 +2,11 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import Select, func, select
+from sqlalchemy.orm import aliased
 
 from shared.configs.db import db
 from shared.helpers.utils import convert_int
+from shared.models.document import Document
 from shared.models.instructor import Instructor
 from shared.models.user import User
 from shared.util import serialize
@@ -16,6 +18,9 @@ from ..schemas.instructor import DetailInstructorRow, InstructorRow
 
 class InstructorRepository:
     def generate_get_instructors(self, params: GetInstructorsParams) -> Select:
+        passport_photo_doc = aliased(Document)
+        cv_doc = aliased(Document)
+
         query = (
             select(
                 Instructor.id,
@@ -26,9 +31,29 @@ class InstructorRepository:
                 Instructor.specialization,
                 Instructor.created_at,
                 User.name.label("created_by"),
+                passport_photo_doc.s3_key.label("passport_photo"),
+                cv_doc.s3_key.label("cv"),
             )
             .select_from(Instructor)
             .join(User, User.id == Instructor.created_by)
+            .outerjoin(
+                passport_photo_doc,
+                (
+                    (passport_photo_doc.owner_id == Instructor.id)
+                    & (passport_photo_doc.owner_type == "instructor")
+                    & (passport_photo_doc.document_type == "passport_photo")
+                    & (passport_photo_doc.is_deleted == False)
+                ),
+            )
+            .outerjoin(
+                cv_doc,
+                (
+                    (cv_doc.owner_id == Instructor.id)
+                    & (cv_doc.owner_type == "instructor")
+                    & (cv_doc.document_type == "cv")
+                    & (cv_doc.is_deleted == False)
+                ),
+            )
             .where(Instructor.is_deleted.is_(False))
         )
         search = params.get("search")

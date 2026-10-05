@@ -1,9 +1,15 @@
+import os
+from datetime import timedelta
+
+import boto3
+
 from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound
+from shared.helpers.utils import get_s3_signed_url
 from shared.models.instructor import Instructor
 
-from ..repositories.instructor import InstructorRepository
+from ..repositories.instructor import InstructorRepository, InstructorRow
 from ..schemas.event import GetInstructorsParams
 from ..schemas.instructor import GetDetailInstructorResult, GetInstructorsResult
 
@@ -14,8 +20,40 @@ class InstructorService:
 
     def get_list(self, params: GetInstructorsParams) -> GetInstructorsResult:
         query = self.repo.generate_get_instructors(params)
-        instructors = self.repo.get_instructors(params, query)
+        rows = self.repo.get_instructors(params, query)
         total_data = self.repo.get_total_data_instructors(query)
+
+        session = boto3.Session(region_name=os.getenv("REGION"))
+        s3_client = session.client("s3")
+
+        instructors: list[InstructorRow] = []
+        for row in rows:
+            passport_photo = None
+            if row.get("passport_photo"):
+                passport_photo = get_s3_signed_url(
+                    s3_client, row.get("passport_photo") or "", timedelta(days=1)
+                )
+
+            cv = None
+            if row.get("cv"):
+                cv = get_s3_signed_url(
+                    s3_client, row.get("cv") or "", timedelta(days=1)
+                )
+
+            instructors.append(
+                InstructorRow(
+                    id=row["id"],
+                    name=row["name"],
+                    phone_number=row["phone_number"],
+                    email=row["email"],
+                    course_theme_id=row["course_theme_id"],
+                    specialization=row["specialization"],
+                    created_at=row["created_at"],
+                    created_by=row["created_by"],
+                    passport_photo=passport_photo,
+                    cv=cv,
+                )
+            )
 
         return GetInstructorsResult(instructors=instructors, total_data=total_data)
 
@@ -56,5 +94,7 @@ class InstructorService:
         instructor.updated_by = actor_id
 
         db.commit()
+
+        return instructor
 
         return instructor

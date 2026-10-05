@@ -10,6 +10,8 @@ class InstructorRow(TypedDict):
     specialization: str
     created_at: str
     created_by: str
+    passport_photo: str | None
+    cv: str | None
 
 
 class GetInstructorsResult(TypedDict):
