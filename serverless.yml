@@ -51,6 +51,66 @@ functions:
           path: /login
           method: post
 
+  documents:
+    handler: functions/documents/lambda_function.lambda_handler
+    package:
+      patterns:
+        - "functions/documents/**"
+        - "functions/participant/repositories/participant.py"
+        - "functions/participant/schemas/participant.py"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+    events:
+      - httpApi:
+          path: /files/presign-upload
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /files/presign-download
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /documents
+          method: post
+          authorizer:
+            name: cognito
+
+  instructor:
+    handler: functions/instructor/lambda_function.lambda_handler
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+    package:
+      patterns:
+        - "functions/instructor/**"
+        - "functions/documents/schemas/document.py"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    events:
+      - httpApi:
+          path: /instructor
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /instructor/{id}
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /instructor
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /instructor/{id}
+          method: put
+          authorizer:
+            name: cognito
+
   participant:
     handler: functions/participant/lambda_function.lambda_handler
     environment:
@@ -87,32 +147,9 @@ functions:
           method: put
           authorizer:
             name: cognito
-
-  documents:
-    handler: functions/documents/lambda_function.lambda_handler
-    package:
-      patterns:
-        - "functions/documents/**"
-        - "functions/participant/repositories/participant.py"
-        - "functions/participant/schemas/participant.py"
-        - "!**/__pycache__/**"
-        - "!**/*.pyc"
-    environment:
-      S3_BUCKET: ${env:S3_BUCKET}
-    events:
       - httpApi:
-          path: /files/presign-upload
-          method: post
-          authorizer:
-            name: cognito
-      - httpApi:
-          path: /files/presign-download
-          method: post
-          authorizer:
-            name: cognito
-      - httpApi:
-          path: /documents
-          method: post
+          path: /participant/{id}
+          method: delete
           authorizer:
             name: cognito
 
