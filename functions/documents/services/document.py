@@ -11,6 +11,7 @@ from shared.models.document import Document
 from shared.util import HttpError
 
 from ..repositories.document import DocumentRepository
+from ..repositories.instructor import InstructorRepository
 from ..repositories.participant import ParticipantRepository
 from ..schemas.document import PresignUploadResult
 from ..schemas.event import (
@@ -39,6 +40,7 @@ class DocumentService:
     def __init__(self):
         self.repo = DocumentRepository()
         self.participant_repo = ParticipantRepository()
+        self.instructor_repo = InstructorRepository()
         self.s3_manager = AWSManager.S3Manager(os.environ["S3_BUCKET"])
 
     @staticmethod
@@ -123,6 +125,11 @@ class DocumentService:
             participant = self.participant_repo.find(owner["id"])
 
             return participant is not None
+
+        if owner["type"] == FileOwnerType.INSTRUCTOR:
+            instructor = self.instructor_repo.find(owner["id"])
+
+            return instructor is not None
 
         return False
 
