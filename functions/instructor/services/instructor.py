@@ -1,5 +1,3 @@
-import uuid
-
 from shared.configs.config import config
 from shared.configs.db import db
 from shared.exception import NotFound
@@ -15,11 +13,9 @@ class InstructorService:
         self.repo = InstructorRepository()
 
     def get_list(self, params: GetInstructorsParams) -> GetInstructorsResult:
-        p = int(params.get("p") or 1)
-        rp = int(params.get("rp") or 25)
-
-        instructors = self.repo.get_instructors(offset=((p - 1) * rp), limit=rp)
-        total_data = self.repo.get_total_data_instructors()
+        query = self.repo.generate_get_instructors(params)
+        instructors = self.repo.get_instructors(params, query)
+        total_data = self.repo.get_total_data_instructors(query)
 
         return GetInstructorsResult(instructors=instructors, total_data=total_data)
 
@@ -33,8 +29,8 @@ class InstructorService:
 
     def create(self, body: dict) -> Instructor:
         instructor = Instructor(
-            id=uuid.uuid4(),
             name=body["name"],
+            email=body["email"],
             phone_number=body["phone_number"],
             course_theme_id=body["course_theme_id"],
             specialization=body["specialization"],

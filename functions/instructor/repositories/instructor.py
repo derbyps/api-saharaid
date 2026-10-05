@@ -1,16 +1,17 @@
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 
 from shared.configs.db import db
+from shared.helpers.utils import convert_int
 from shared.models.instructor import Instructor
 from shared.models.user import User
 from shared.util import serialize
 
+from ..schemas.event import GetInstructorsParams
 from ..schemas.instructor import DetailInstructorRow, InstructorRow
 
 
 class InstructorRepository:
-    def get_instructors(self, offset: int, limit: int) -> list[InstructorRow]:
-
+    def generate_get_instructors(self, params: GetInstructorsParams) -> Select:
         query = (
             select(
                 Instructor.id,
@@ -25,25 +26,29 @@ class InstructorRepository:
             .select_from(Instructor)
             .join(User, User.id == Instructor.created_by)
             .where(Instructor.is_deleted.is_(False))
-            .limit(limit)
-            .offset(offset)
         )
+
+        return query
+
+    def get_instructors(
+        self, params: GetInstructorsParams, query: Select
+    ) -> list[InstructorRow]:
+
+        p = convert_int(params.get("p") or 1)
+        rp = convert_int(params.get("rp") or 25)
+        offset = (p - 1) * rp
+
+        query = query.limit(rp).offset(offset)
 
         instructors = serialize(db.session.execute(query).all(), InstructorRow)
 
         return instructors
 
-    def get_total_data_instructors(self) -> int:
+    def get_total_data_instructors(self, query: Select) -> int:
 
         total_data = (
             db.session.scalars(
-                select(func.COUNT()).select_from(
-                    (
-                        select(Instructor)
-                        .select_from(Instructor)
-                        .where(Instructor.is_deleted.is_(False))
-                    ).subquery()
-                )
+                select(func.COUNT()).select_from((query).subquery())
             ).first()
             or 0
         )
