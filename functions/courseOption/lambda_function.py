@@ -2,7 +2,7 @@ from shared import util
 from shared.decorators.error_handling import handle_errors
 
 from .handlers.GET import get_course_option_handler
-from .handlers.POST import create_instructor_handler
+from .handlers.POST import create_handler
 from .handlers.PUT import update_instructor_handler
 
 
@@ -14,7 +14,7 @@ def lambda_handler(event, _):
         return get_course_option_handler(event)
 
     if method == "POST":
-        return create_instructor_handler(event)
+        return create_handler(event)
 
     if method == "PUT":
         return update_instructor_handler(event)

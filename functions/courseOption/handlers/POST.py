@@ -2,34 +2,18 @@ import json
 
 from shared import util
 
-from ..schemas.instructor import DetailInstructorRow
-from ..services.instructor import InstructorService
+from ..services.course_option import CourseOptionService
 
 
-def create_instructor_handler(event: dict) -> dict:
+def create_handler(event: dict) -> dict:
     body = json.loads(event.get("body") or "{}")
-    req_body = [
-        "name",
-        "phone_number",
-        "email",
-        "course_theme_id",
-        "specialization",
-    ]
+    req_body = ["include"]
     for item in req_body:
         if item not in body:
             return util.return_response(422, {})
 
     actor_id = util.current_user_id(event)
-    service = InstructorService()
+    service = CourseOptionService()
     result = service.create(body, str(actor_id))
-    response: DetailInstructorRow = {
-        "id": str(result.id),
-        "name": result.name,
-        "phone_number": result.phone_number,
-        "email": result.email,
-        "course_theme_id": str(result.course_theme_id),
-        "specialization": result.specialization,
-        "created_at": result.created_at,
-    }
 
-    return util.return_response(201, dict(response))
+    return util.return_response(201, dict(result))
