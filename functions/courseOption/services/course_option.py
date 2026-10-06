@@ -38,10 +38,10 @@ class CourseOptionService:
         return response
 
     def create(self, body: dict, actor_id: str) -> dict:
-        origin = body["origin"]
+        option_type = body["option_type"]
         response = {}
 
-        if origin == "type":
+        if option_type == "type":
             course_type = CourseType(
                 sanity_id=body["sanity_id"],
                 title=body["title"],
@@ -53,7 +53,7 @@ class CourseOptionService:
             db.save(course_type)
             response["course_type"] = course_type
 
-        if origin == "class_type":
+        if option_type == "class_type":
             course_class_type = CourseClassType(
                 sanity_id=body["sanity_id"],
                 title=body["title"],
@@ -64,7 +64,7 @@ class CourseOptionService:
             db.save(course_class_type)
             response["course_class_type"] = course_class_type
 
-        if origin == "certificate_validity":
+        if option_type == "certificate_validity":
             course_certificate_validity = CourseCertificateValidity(
                 sanity_id=body["sanity_id"],
                 title=body["title"],

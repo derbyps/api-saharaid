@@ -7,7 +7,7 @@ from ..services.course_option import CourseOptionService
 
 def create_handler(event: dict) -> dict:
     body = json.loads(event.get("body") or "{}")
-    req_body = ["include"]
+    req_body = ["option_type"]
     for item in req_body:
         if item not in body:
             return util.return_response(422, {})
