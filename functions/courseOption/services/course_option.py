@@ -24,16 +24,50 @@ class CourseOptionService:
         response: CourseOptionResponse = {}
 
         if include and "type" in include:
-            type = self.type_repo.get_type()
-            response["type"] = type
+            types = self.type_repo.get_type()
+            res = []
+            for type in types:
+                res.append(
+                    {
+                        "id": type.id,
+                        "sanity_id": type.sanity_id,
+                        "title": type.title,
+                        "code": type.code,
+                        "synced_at": type.synced_at,
+                    }
+                )
+            response["type"] = res
 
         if include and "class_type" in include:
-            class_type = self.class_type_repo.get_class_type()
-            response["class_type"] = class_type
+            class_types = self.class_type_repo.get_class_type()
+            res = []
+            for class_type in class_types:
+                res.append(
+                    {
+                        "id": class_type.id,
+                        "sanity_id": class_type.sanity_id,
+                        "title": class_type.title,
+                        "synced_at": class_type.synced_at,
+                    }
+                )
+
+            response["class_type"] = res
 
         if include and "certificate_validity" in include:
-            certificate_validity = self.certificate_validity.get_certificate_validity()
-            response["certificate_validity"] = certificate_validity
+            certificate_validities = (
+                self.certificate_validity.get_certificate_validity()
+            )
+            res = []
+            for certificate_validity in certificate_validities:
+                res.append(
+                    {
+                        "id": certificate_validity.id,
+                        "sanity_id": certificate_validity.sanity_id,
+                        "title": certificate_validity.title,
+                        "synced_at": certificate_validity.synced_at,
+                    }
+                )
+            response["certificate_validity"] = res
 
         return response
 
