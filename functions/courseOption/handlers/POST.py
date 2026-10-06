@@ -16,4 +16,4 @@ def create_handler(event: dict) -> dict:
     service = CourseOptionService()
     result = service.create(body, str(actor_id))
 
-    return util.return_response(201, dict(result))
+    return util.return_response(201, result)

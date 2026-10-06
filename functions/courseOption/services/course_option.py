@@ -39,7 +39,6 @@ class CourseOptionService:
 
     def create(self, body: dict, actor_id: str) -> dict:
         option_type = body["option_type"]
-        response = {}
 
         if option_type == "type":
             course_type = CourseType(
@@ -51,7 +50,13 @@ class CourseOptionService:
                 created_by=actor_id,
             )
             db.save(course_type)
-            response["course_type"] = course_type
+
+            return {
+                "sanity_id": course_type.sanity_id,
+                "title": course_type.title,
+                "code": course_type.code,
+                "synced_at": course_type.synced_at,
+            }
 
         if option_type == "class_type":
             course_class_type = CourseClassType(
@@ -62,7 +67,11 @@ class CourseOptionService:
                 created_by=actor_id,
             )
             db.save(course_class_type)
-            response["course_class_type"] = course_class_type
+            return {
+                "sanity_id": course_class_type.sanity_id,
+                "title": course_class_type.title,
+                "synced_at": course_class_type.synced_at,
+            }
 
         if option_type == "certificate_validity":
             course_certificate_validity = CourseCertificateValidity(
@@ -73,8 +82,12 @@ class CourseOptionService:
                 created_by=actor_id,
             )
             db.save(course_certificate_validity)
-            response["course_certificate_validity"] = course_certificate_validity
+            return {
+                "sanity_id": course_certificate_validity.sanity_id,
+                "title": course_certificate_validity.title,
+                "synced_at": course_certificate_validity.synced_at,
+            }
 
         db.commit()
 
-        return response
+        return {}
