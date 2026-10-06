@@ -14,6 +14,7 @@ class InstructorRow(TypedDict):
     created_by: str
     passport_photo: str | None
     cv: str | None
+    course_theme_name: str
 
 
 class GetInstructorsResult(TypedDict):
@@ -30,9 +31,9 @@ class DetailInstructorRow(TypedDict):
     specialization: str
     created_at: str
     created_by: NotRequired[str]
+    course_theme_name: str
 
 
 class GetDetailInstructorResult(TypedDict):
     instructor: DetailInstructorRow
-    documents: list[DocumentsRow]
     documents: list[DocumentsRow]

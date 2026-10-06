@@ -56,6 +56,7 @@ class InstructorService:
                     created_by=row["created_by"],
                     passport_photo=passport_photo,
                     cv=cv,
+                    course_theme_name=row["course_theme_name"],
                 )
             )
 
@@ -86,6 +87,7 @@ class InstructorService:
                     document_type=row["document_type"],
                     s3_key=url,
                     content_type=row["content_type"],
+                    course_theme_name=row["course_theme_name"],
                 )
             )
 

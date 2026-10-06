@@ -8,3 +8,4 @@ class DocumentsRow(TypedDict):
     document_type: str
     s3_key: str | None
     content_type: str
+    course_theme_name: str

@@ -6,6 +6,7 @@ from sqlalchemy.orm import aliased
 
 from shared.configs.db import db
 from shared.helpers.utils import convert_int
+from shared.models.course_theme import CourseTheme
 from shared.models.document import Document
 from shared.models.instructor import Instructor
 from shared.models.user import User
@@ -33,9 +34,11 @@ class InstructorRepository:
                 User.name.label("created_by"),
                 passport_photo_doc.s3_key.label("passport_photo"),
                 cv_doc.s3_key.label("cv"),
+                CourseTheme.title.label("course_theme_name"),
             )
             .select_from(Instructor)
             .join(User, User.id == Instructor.created_by)
+            .join(CourseTheme, CourseTheme.id == Instructor.course_theme_id)
             .outerjoin(
                 passport_photo_doc,
                 (
@@ -106,9 +109,11 @@ class InstructorRepository:
                     Instructor.specialization,
                     Instructor.created_at,
                     User.name.label("created_by"),
+                    CourseTheme.title.label("course_theme_name"),
                 )
                 .select_from(Instructor)
                 .join(User, User.id == Instructor.created_by)
+                .join(CourseTheme, CourseTheme.id == Instructor.course_theme_id)
                 .where(
                     (Instructor.is_deleted == False) & (Instructor.id == instructor_id)
                 )
