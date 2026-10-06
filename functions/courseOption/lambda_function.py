@@ -16,7 +16,10 @@ def lambda_handler(event, _):
     if method == "POST":
         return create_handler(event)
 
-    if method == "PUT":
+    if method == "PATCH":
         return update_instructor_handler(event)
 
     raise util.HttpError(405, "METHOD_NOT_ALLOWED", "Method not allowed")
+
+
+#

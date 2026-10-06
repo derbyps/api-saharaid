@@ -51,6 +51,33 @@ functions:
           path: /login
           method: post
 
+  courseOption:
+    handler: functions/courseOption/lambda_function.lambda_handler
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+    package:
+      patterns:
+        - "functions/courseOption/**"
+        - "functions/documents/schemas/document.py"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    events:
+      - httpApi:
+          path: /course/options
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /course/options
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /course/options/{id}
+          method: patch
+          authorizer:
+            name: cognito
+
   documents:
     handler: functions/documents/lambda_function.lambda_handler
     package:
