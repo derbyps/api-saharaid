@@ -117,3 +117,6 @@ class InstructorRepository:
         )
 
         return instructor
+
+    def hard_delete(self, instructor_id: str) -> None:
+        db.session.delete(Instructor.id == instructor_id)

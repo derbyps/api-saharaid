@@ -1,7 +1,6 @@
 from shared import util
-from shared.configs.config import config
-from shared.configs.db import db
-from shared.models.instructor import Instructor
+
+from ..services.instructor import InstructorService
 
 
 def delete_method_handler(event: dict) -> dict:
@@ -9,14 +8,20 @@ def delete_method_handler(event: dict) -> dict:
     if not instructor_id:
         return util.return_response(400, {})
 
-    instructor = Instructor.get_detail(instructor_id)
-    if not instructor:
-        return util.return_response(404, {})
+    service = InstructorService()
+    instructor = service.delete(instructor_id, event)
 
-    instructor.is_deleted = True
-    instructor.deleted_at = config.TIMESTAMP
-    instructor.deleted_by = config.USER_ID
-
-    db.commit()
-
-    return util.return_response(200, {})
+    return util.return_response(
+        200,
+        {
+            "instructor": {
+                "id": instructor.id,
+                "name": instructor.name,
+                "phone_number": instructor.phone_number,
+                "email": instructor.email,
+                "course_theme_id": str(instructor.course_theme_id),
+                "specialization": instructor.specialization,
+                "created_at": instructor.created_at,
+            }
+        },
+    )

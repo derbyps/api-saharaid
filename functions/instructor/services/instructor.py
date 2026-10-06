@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import boto3
 
+from shared import util
 from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound
@@ -123,4 +124,25 @@ class InstructorService:
         return instructor
 
         return instructor
+        return instructor
+
+    def delete(self, instructor_id: str, event: dict) -> Instructor:
+        params = event.get("queryStringParameters") or {}
+
+        instructor = Instructor.get_detail(instructor_id)
+        if not instructor:
+            raise NotFound("INSTRUCTOR_NOT_FOUND")
+
+        if params.get("origin") == "creation":
+            self.instructor_repo.hard_delete(instructor_id)
+            db.commit()
+            return instructor
+
+        actor_id = util.current_user_id(event)
+        instructor.is_deleted = True
+        instructor.deleted_at = config_module.TIMESTAMP
+        instructor.deleted_by = str(actor_id)
+
+        db.commit()
+
         return instructor

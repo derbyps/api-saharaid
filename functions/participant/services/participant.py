@@ -1,6 +1,5 @@
 import os
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import timedelta
 
 import boto3
 
@@ -215,13 +214,12 @@ class ParticipantService:
         if not participant:
             raise NotFound("PARTICIPANT_NOT_FOUND")
 
-        actor_id = util.current_user_id(event)
-
         if params.get("origin") == "creation":
             self.participant_repo.hard_delete(participant_id)
             db.commit()
             return participant
 
+        actor_id = util.current_user_id(event)
         participant.is_deleted = True
         participant.deleted_at = config_module.TIMESTAMP
         participant.deleted_by = str(actor_id)
