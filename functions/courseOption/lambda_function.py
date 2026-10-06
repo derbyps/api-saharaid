@@ -3,6 +3,7 @@ from shared.decorators.error_handling import handle_errors
 
 from .handlers.GET import get_course_option_handler
 from .handlers.POST import create_handler
+from .handlers.PUT import update_handler
 
 
 @handle_errors
@@ -14,6 +15,9 @@ def lambda_handler(event, _):
 
     if method == "POST":
         return create_handler(event)
+
+    if method == "PUT":
+        return update_handler(event)
 
     # if method == "PATCH":
     #     return update_instructor_handler(event)

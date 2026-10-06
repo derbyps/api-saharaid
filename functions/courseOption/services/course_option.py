@@ -1,5 +1,6 @@
 from shared.configs import config as config_module
 from shared.configs.db import db
+from shared.exception import NotFound
 from shared.models.course_certificate_validity import CourseCertificateValidity
 from shared.models.course_class_type import CourseClassType
 from shared.models.course_type import CourseType
@@ -123,5 +124,63 @@ class CourseOptionService:
             }
 
         db.commit()
+
+        return {}
+
+    def update(self, body: dict, id: str, actor_id: str) -> dict:
+        option_type = body["option_type"]
+
+        if option_type == "type":
+            course_type = CourseType.get_detail(id)
+            if not course_type:
+                raise NotFound("COURSE_TYPE_NOT_FOUND")
+
+            course_type.title = body["title"]
+            course_type.code = body["code"]
+            course_type.updated_at = config_module.TIMESTAMP
+            course_type.updated_by = actor_id
+
+            db.commit()
+
+            return {
+                "sanity_id": course_type.sanity_id,
+                "title": course_type.title,
+                "code": course_type.code,
+                "synced_at": course_type.synced_at,
+            }
+
+        if option_type == "class_type":
+            course_class_type = CourseClassType.get_detail(id)
+            if not course_class_type:
+                raise NotFound("COURSE_CLASS_TYPE_NOT_FOUND")
+
+            course_class_type.title = body["title"]
+            course_class_type.updated_at = config_module.TIMESTAMP
+            course_class_type.updated_by = actor_id
+
+            db.commit()
+
+            return {
+                "sanity_id": course_class_type.sanity_id,
+                "title": course_class_type.title,
+                "synced_at": course_class_type.synced_at,
+            }
+
+        if option_type == "certificate_validity":
+            course_certificate_validity = CourseCertificateValidity.get_detail(id)
+            if not course_certificate_validity:
+                raise NotFound("COURSE_CERTIFICATE_VALIDITY_NOT_FOUND")
+
+            course_certificate_validity.title = body["title"]
+            course_certificate_validity.updated_at = config_module.TIMESTAMP
+            course_certificate_validity.updated_by = actor_id
+
+            db.commit()
+
+            return {
+                "sanity_id": course_certificate_validity.sanity_id,
+                "title": course_certificate_validity.title,
+                "synced_at": course_certificate_validity.synced_at,
+            }
 
         return {}

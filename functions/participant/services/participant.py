@@ -183,9 +183,7 @@ class ParticipantService:
         return participants
 
     def update(self, participant_id: str, body: dict, actor_id: str) -> Participant:
-        print("haiiiii update")
         participant = Participant.get_detail(participant_id)
-        print("participant nicccc", participant)
         if not participant:
             raise NotFound("PARTICIPANT_NOT_FOUND")
 
@@ -202,9 +200,7 @@ class ParticipantService:
         participant.education = body["education"]
         participant.cr_number = body["cr_number"]
         participant.tax_number = body["tax_number"]
-        participant.updated_at = datetime.now(ZoneInfo("Asia/Jakarta")).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+        participant.updated_at = config_module.TIMESTAMP
         participant.updated_by = config_module.USER_ID
 
         db.commit()
