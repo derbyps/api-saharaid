@@ -2,6 +2,7 @@ from shared import util
 from shared.decorators.error_handling import handle_errors
 
 from .handlers.GET import get_course_option_handler
+from .handlers.PATCH import patch_handler
 from .handlers.POST import create_handler
 from .handlers.PUT import update_handler
 
@@ -19,10 +20,7 @@ def lambda_handler(event, _):
     if method == "PUT":
         return update_handler(event)
 
-    # if method == "PATCH":
-    #     return update_instructor_handler(event)
+    if method == "PATCH":
+        return patch_handler(event)
 
     raise util.HttpError(405, "METHOD_NOT_ALLOWED", "Method not allowed")
-
-
-#
