@@ -1,7 +1,6 @@
 from shared import util
-from shared.configs.config import config
-from shared.configs.db import db
-from shared.models.participant import Participant
+
+from ..services.participant import ParticipantService
 
 
 def delete_method_handler(event: dict) -> dict:
@@ -9,14 +8,27 @@ def delete_method_handler(event: dict) -> dict:
     if not participant_id:
         return util.return_response(400, {})
 
-    participant = Participant.get_detail(participant_id)
-    if not participant:
-        return util.return_response(404, {})
+    service = ParticipantService()
+    participant = service.delete(participant_id, event)
 
-    participant.is_deleted = True
-    participant.deleted_at = config.TIMESTAMP
-    participant.deleted_by = config.USER_ID
-
-    db.commit()
-
-    return util.return_response(200, {"participant": participant})
+    return util.return_response(
+        200,
+        {
+            "participant": {
+                "id": participant.id,
+                "name": participant.name,
+                "identity_number": participant.identity_number,
+                "gender": participant.gender,
+                "phone_number": participant.phone_number,
+                "email": participant.email,
+                "date_of_birth": participant.date_of_birth,
+                "religion": participant.religion,
+                "address": participant.address,
+                "job_position": participant.job_position,
+                "job_company": participant.job_company,
+                "education": participant.education,
+                "cr_number": participant.cr_number,
+                "tax_number": participant.tax_number,
+            }
+        },
+    )

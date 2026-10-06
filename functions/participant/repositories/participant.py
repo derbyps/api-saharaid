@@ -149,3 +149,6 @@ class ParticipantRepository:
     def bulk(self, participants: list[Participant]) -> None:
         db.session.add_all(participants)
         db.session.commit()
+
+    def hard_delete(self, participant_id: str) -> None:
+        db.session.delete(Participant.id == participant_id)

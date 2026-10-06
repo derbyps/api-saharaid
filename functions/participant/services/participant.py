@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 import boto3
 
+from shared import util
 from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound
@@ -201,8 +202,29 @@ class ParticipantService:
         participant.cr_number = body["cr_number"]
         participant.tax_number = body["tax_number"]
         participant.updated_at = config_module.TIMESTAMP
-        participant.updated_by = config_module.USER_ID
+        participant.updated_by = actor_id
 
         db.commit()
 
+        return participant
+
+    def delete(self, participant_id: str, event: dict) -> Participant:
+        params = event.get("queryStringParameters") or {}
+
+        participant = Participant.get_detail(participant_id)
+        if not participant:
+            raise NotFound("PARTICIPANT_NOT_FOUND")
+
+        actor_id = util.current_user_id(event)
+
+        if params.get("origin") == "creation":
+            self.participant_repo.hard_delete(participant_id)
+            db.commit()
+            return participant
+
+        participant.is_deleted = True
+        participant.deleted_at = config_module.TIMESTAMP
+        participant.deleted_by = str(actor_id)
+
+        db.commit()
         return participant
