@@ -180,6 +180,48 @@ functions:
           authorizer:
             name: cognito
 
+  schedule:
+    handler: functions/schedule/lambda_function.lambda_handler
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+    package:
+      patterns:
+        - "functions/schedule/**"
+        - "functions/documents/schemas/document.py"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    events:
+      - httpApi:
+          path: /schedule
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /schedule/{id}
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /schedule
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /schedule/bulk
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /schedule/{id}
+          method: put
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /schedule/{id}
+          method: delete
+          authorizer:
+            name: cognito
+
 package:
   individually: true
   patterns:
