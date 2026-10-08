@@ -6,8 +6,7 @@ create table if not exists public.schedule_batch_counter (
 create table if not exists public.schedule (
   id uuid primary key default gen_random_uuid(),
   course_id uuid not null references public.course (id),
-  class text not null check (btrim(class) <> ''),
-  course_mode text not null check (course_mode in ('online', 'offline')),
+  course_class_type_id uuid not null references public.course_class_type (id),
   start_date date not null,
   end_date date not null,
   location text not null check (btrim(location) <> ''),

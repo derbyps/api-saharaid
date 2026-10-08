@@ -19,11 +19,12 @@ class GetSchedulesResult(TypedDict):
 class DetailScheduleRow(TypedDict):
     id: str
     course_id: str
+    course_class_type_id: str
     start_date: str
     end_date: str
     location: str
-    course_mode_id: str
     serial_number: int
+    batch: str
 
 
 class GetDetailScheduleResult(TypedDict):

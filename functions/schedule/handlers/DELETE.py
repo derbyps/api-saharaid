@@ -1,5 +1,5 @@
 from shared import util
-from shared.configs.config import config
+from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.models.schedule import Schedule
 
@@ -13,9 +13,11 @@ def delete_method_handler(event: dict) -> dict:
     if not schedule:
         return util.return_response(404, {})
 
+    actor_id = util.current_user_id(event)
+
     schedule.is_deleted = True
-    schedule.deleted_at = config.TIMESTAMP
-    schedule.deleted_by = config.USER_ID
+    schedule.deleted_at = config_module.TIMESTAMP
+    schedule.deleted_by = str(actor_id)
 
     db.commit()
 

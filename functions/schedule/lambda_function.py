@@ -27,6 +27,3 @@ def lambda_handler(event, _):
         return delete_method_handler(event)
 
     raise util.HttpError(405, "METHOD_NOT_ALLOWED", "Method not allowed")
-
-
-#

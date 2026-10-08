@@ -1,6 +1,6 @@
 import uuid
 
-from shared.configs.config import config
+from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound
 from shared.models.schedule import Schedule
@@ -31,20 +31,20 @@ class ScheduleService:
 
         return GetDetailScheduleResult(schedule=schedule, documents=[])
 
-    def create(self, body: dict) -> Schedule:
+    def create(self, body: dict, actor_id: str) -> Schedule:
 
         serial_number = self.repo.get_max_serial_number() + 1
 
         schedule = Schedule(
-            id=uuid.uuid4(),
             course_id=body["course_id"],
+            course_class_type_id=body["course_class_type_id"],
             start_date=body["start_date"],
             end_date=body["end_date"],
             location=body["location"],
-            course_mode_id=body["course_mode_id"],
             serial_number=serial_number,
-            created_at=config.TIMESTAMP,
-            created_by=config.USER_ID,
+            batch=body["batch"],
+            created_at=config_module.TIMESTAMP,
+            created_by=actor_id,
         )
 
         db.save(schedule)
@@ -52,18 +52,19 @@ class ScheduleService:
 
         return schedule
 
-    def update(self, schedule_id: str, body: dict) -> Schedule:
+    def update(self, schedule_id: str, body: dict, actor_id: str) -> Schedule:
         schedule = Schedule.get_detail(schedule_id)
         if not schedule:
             raise NotFound("PARTICIPANT_NOT_FOUND")
 
         schedule.course_id = body["course_id"]
+        schedule.course_class_type_id = body["course_class_type_id"]
         schedule.start_date = body["start_date"]
         schedule.end_date = body["end_date"]
         schedule.location = body["location"]
-        schedule.course_mode_id = body["course_mode_id"]
-        schedule.updated_at = config.TIMESTAMP
-        schedule.updated_by = config.USER_ID
+        schedule.batch = body["batch"]
+        schedule.updated_at = config_module.TIMESTAMP
+        schedule.updated_by = actor_id
 
         db.commit()
 

@@ -14,13 +14,14 @@ class Schedule(Base):
         default=lambda: str(uuid_extensions.uuid7()),
     )
     course_id: Mapped[str] = mapped_column(String, nullable=False)
+    course_class_type_id: Mapped[str] = mapped_column(String, nullable=False)
     start_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     end_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     location: Mapped[str] = mapped_column(String, nullable=False)
-    course_mode_id: Mapped[str] = mapped_column(String, nullable=False)
     serial_number: Mapped[int] = mapped_column(
         BigInteger, Identity(always=True), unique=True
     )
+    batch: Mapped[str] = mapped_column(String, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
@@ -34,11 +35,12 @@ class Schedule(Base):
     def __init__(
         self,
         course_id: str,
+        course_class_type_id: str,
         start_date: str,
         end_date: str,
         location: str,
-        course_mode_id: str,
         serial_number: int,
+        batch: str,
         created_at: str,
         created_by: str,
         is_deleted: bool = False,
@@ -48,11 +50,12 @@ class Schedule(Base):
         deleted_by: str | None = None,
     ):
         self.course_id = course_id
+        self.course_class_type_id = course_class_type_id
         self.start_date = start_date
         self.end_date = end_date
         self.location = location
-        self.course_mode_id = course_mode_id
         self.serial_number = serial_number
+        self.batch = batch
         self.is_deleted = is_deleted
         self.created_at = created_at
         self.created_by = created_by
