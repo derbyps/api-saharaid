@@ -1,5 +1,3 @@
-import uuid
-
 from shared.configs import config as config_module
 from shared.configs.db import db
 from shared.exception import NotFound

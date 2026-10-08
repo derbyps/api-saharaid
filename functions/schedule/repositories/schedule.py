@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 
 from shared.configs.db import db
 from shared.models.course import Course

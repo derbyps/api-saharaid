@@ -13,11 +13,20 @@ class Course(Base):
         primary_key=True,
         default=lambda: str(uuid_extensions.uuid7()),
     )
-    type_id: Mapped[str] = mapped_column(String)
-    mode_id: Mapped[str] = mapped_column(String)
-    course_theme_id: Mapped[str] = mapped_column(String)
     course_related_id: Mapped[str | None] = mapped_column(String)
+    sanity_id: Mapped[str] = mapped_column(String)
+    course_type_id: Mapped[str] = mapped_column(String)
+    course_class_type_id: Mapped[str] = mapped_column(String)
+    course_theme_id: Mapped[str] = mapped_column(String)
+    course_certificate_validity_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
     name: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+    asset_status: Mapped[str] = mapped_column(
         String,
         nullable=False,
     )
@@ -27,10 +36,6 @@ class Course(Base):
     )
     duration: Mapped[int] = mapped_column(
         Integer,
-        nullable=False,
-    )
-    certificate_validity: Mapped[str] = mapped_column(
-        String,
         nullable=False,
     )
     overview: Mapped[str] = mapped_column(
@@ -46,10 +51,6 @@ class Course(Base):
         nullable=False,
     )
     requirement: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
-    brochure: Mapped[str] = mapped_column(
         String,
         nullable=False,
     )
@@ -80,19 +81,20 @@ class Course(Base):
 
     def __init__(
         self,
-        type_id: str,
-        mode_id: str,
-        course_theme_id: str,
         course_related_id: str | None,
+        sanity_id: str,
+        course_type_id: str,
+        course_class_type_id: str,
+        course_theme_id: str,
+        course_certificate_validity_id: str,
         name: str,
+        asset_status: str,
         slug: str,
         duration: int,
-        certificate_validity: str,
         overview: str,
         objective: str,
         outline: str,
         requirement: str,
-        brochure: str,
         is_fresh_graduate: bool,
         is_experienced: bool,
         is_student: bool,
@@ -104,19 +106,21 @@ class Course(Base):
         deleted_at: str | None = None,
         deleted_by: str | None = None,
     ):
-        self.type_id = type_id
-        self.mode_id = mode_id
-        self.course_theme_id = course_theme_id
+        self.sanity_id = sanity_id
         self.course_related_id = course_related_id
+        self.sanity_id = sanity_id
+        self.course_type_id = course_type_id
+        self.course_class_type_id = course_class_type_id
+        self.course_theme_id = course_theme_id
+        self.course_certificate_validity_id = course_certificate_validity_id
         self.name = name
+        self.asset_status = asset_status
         self.slug = slug
         self.duration = duration
-        self.certificate_validity = certificate_validity
         self.overview = overview
         self.objective = objective
         self.outline = outline
         self.requirement = requirement
-        self.brochure = brochure
         self.is_fresh_graduate = is_fresh_graduate
         self.is_experienced = is_experienced
         self.is_student = is_student
