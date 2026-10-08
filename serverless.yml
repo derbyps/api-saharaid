@@ -222,6 +222,20 @@ functions:
           authorizer:
             name: cognito
 
+  statistic:
+    handler: functions/statistic/lambda_function.lambda_handler
+    package:
+      patterns:
+        - "functions/statistic/**"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    events:
+      - httpApi:
+          path: /statistic
+          method: get
+          authorizer:
+            name: cognito
+
 package:
   individually: true
   patterns:

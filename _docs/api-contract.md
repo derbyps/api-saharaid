@@ -852,6 +852,7 @@ GET `/statistic`
   "number_stats": {
     "participant": 100,
     "instructor": 200,
+    "course": 100,
   },
   "chart_stats": {
     "participant_certificate": [
