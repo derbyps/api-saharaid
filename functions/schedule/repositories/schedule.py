@@ -1,12 +1,14 @@
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 
 from shared.configs.db import db
+from shared.helpers.utils import convert_int
 from shared.models.course import Course
 from shared.models.participant import Participant
 from shared.models.schedule import Schedule
 from shared.models.schedule_participant import ScheduleParticipant
 from shared.util import serialize
 
+from ..schemas.event import GetSchedulesParams
 from ..schemas.schedule import DetailScheduleRow, ScheduleRow
 
 
@@ -19,7 +21,7 @@ class ScheduleRepository:
             or 0
         )
 
-    def get_schedules(self, offset: int, limit: int) -> list[ScheduleRow]:
+    def generate_get_schedules(self, params: GetSchedulesParams) -> Select:
 
         query = (
             select(
@@ -34,25 +36,31 @@ class ScheduleRepository:
             .join(ScheduleParticipant, ScheduleParticipant.schedule_id == Schedule.id)
             .join(Participant, Participant.id == ScheduleParticipant.participant_id)
             .where(Schedule.is_deleted == False)
-            .limit(limit)
-            .offset(offset)
         )
+
+        return query
+
+    def get_schedules(
+        self,
+        query: Select,
+        params: GetSchedulesParams,
+    ) -> list[ScheduleRow]:
+
+        p = convert_int(params.get("p") or 1)
+        rp = convert_int(params.get("rp") or 25)
+        offset = (p - 1) * rp
+
+        query = query.limit(rp).offset(offset)
 
         schedules = serialize(db.session.execute(query).all(), ScheduleRow)
 
         return schedules
 
-    def get_total_data_schedules(self) -> int:
+    def get_total_data_schedules(self, query: Select) -> int:
 
         total_data = (
             db.session.scalars(
-                select(func.COUNT()).select_from(
-                    (
-                        select(Schedule)
-                        .select_from(Schedule)
-                        .where(Schedule.is_deleted == False)
-                    ).subquery()
-                )
+                select(func.COUNT()).select_from((query).subquery())
             ).first()
             or 0
         )

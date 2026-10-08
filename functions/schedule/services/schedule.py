@@ -10,20 +10,19 @@ from ..schemas.schedule import GetDetailScheduleResult, GetSchedulesResult
 
 class ScheduleService:
     def __init__(self):
-        self.repo = ScheduleRepository()
+        self.schedule_repo = ScheduleRepository()
 
     def get_list(self, params: GetSchedulesParams) -> GetSchedulesResult:
-        p = int(params.get("p") or 1)
-        rp = int(params.get("rp") or 25)
 
-        schedules = self.repo.get_schedules(offset=((p - 1) * rp), limit=rp)
-        total_data = self.repo.get_total_data_schedules()
+        query = self.schedule_repo.generate_get_schedules(params)
+        schedules = self.schedule_repo.get_schedules(query, params)
+        total_data = self.schedule_repo.get_total_data_schedules(query)
 
         return GetSchedulesResult(schedules=schedules, total_data=total_data)
 
     def get_detail(self, schedule_id: str) -> GetDetailScheduleResult:
 
-        schedule = self.repo.get_detail_schedule(schedule_id)
+        schedule = self.schedule_repo.get_detail_schedule(schedule_id)
         if not schedule:
             raise NotFound("SCHEDULE_NOT_FOUND")
 
@@ -31,7 +30,7 @@ class ScheduleService:
 
     def create(self, body: dict, actor_id: str) -> Schedule:
 
-        serial_number = self.repo.get_max_serial_number() + 1
+        serial_number = self.schedule_repo.get_max_serial_number() + 1
 
         schedule = Schedule(
             course_id=body["course_id"],
