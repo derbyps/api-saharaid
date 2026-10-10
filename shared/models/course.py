@@ -1,5 +1,5 @@
 import uuid_extensions
-from sqlalchemy import Boolean, DateTime, Integer, String, text
+from sqlalchemy import Boolean, DateTime, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.configs.db import Base, db
@@ -34,41 +34,6 @@ class Course(Base):
         String,
         nullable=False,
     )
-    duration: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-    overview: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
-    objective: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
-    outline: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
-    requirement: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-    )
-    is_fresh_graduate: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default=text("false"),
-    )
-    is_experienced: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default=text("false"),
-    )
-    is_student: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default=text("false"),
-    )
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
@@ -90,14 +55,6 @@ class Course(Base):
         name: str,
         asset_status: str,
         slug: str,
-        duration: int,
-        overview: str,
-        objective: str,
-        outline: str,
-        requirement: str,
-        is_fresh_graduate: bool,
-        is_experienced: bool,
-        is_student: bool,
         created_at: str,
         created_by: str,
         is_deleted: bool = False,
@@ -116,14 +73,6 @@ class Course(Base):
         self.name = name
         self.asset_status = asset_status
         self.slug = slug
-        self.duration = duration
-        self.overview = overview
-        self.objective = objective
-        self.outline = outline
-        self.requirement = requirement
-        self.is_fresh_graduate = is_fresh_graduate
-        self.is_experienced = is_experienced
-        self.is_student = is_student
         self.is_deleted = is_deleted
         self.created_at = created_at
         self.created_by = created_by
