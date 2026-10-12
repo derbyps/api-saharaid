@@ -481,7 +481,7 @@ The frontend uploads bytes directly to each URL using `PUT` and the same `Conten
 
 ### POST `/documents`
 
-Current implementation records participant document rows after direct upload. Instructor owners are rejected.
+Records document rows after direct upload for `participant` or `instructor` owners. `content_type` must be the same value sent in the presign request; it is validated against the allowed types for `document_type`, and a mismatch returns `400 INVALID_DOCUMENT`.
 
 ```json
 {
@@ -492,7 +492,8 @@ Current implementation records participant document rows after direct upload. In
   "files": [
     {
       "document_type": string,
-      "s3_key": string
+      "s3_key": string,
+      "content_type": string
     }
   ],
   "removed_ids": string[],
@@ -639,81 +640,68 @@ Success — `201`: `{ option: ... }` using the GET option shape.
 
 ## 9. Courses
 
-The frontend reads paginated course lists and rich course detail directly from Sanity. There is no backend course-list endpoint.
+The frontend reads paginated course lists and rich course detail directly from Sanity. The backend owns every write: the Sanity write token never leaves the Lambda. `course.id` equals the Sanity `_id` (`sanity_id`).
 
-### POST `/course`
+Flow: `POST /course` (JSON, no bytes) → `POST /course/{id}/presign` → browser `PUT`s each file to S3 → `POST /course/{id}/finalize`. All routes need a Cognito access token.
 
-Creates course metadata without file bytes.
+### POST `/course` and PUT `/course/{id}`
 
 ```ts
 type CoursePayload = {
   title: string;
-  slug: string;
-  theme_sanity_ids: string[];
-  course_type_sanity_id: string;
-  course_class_type_sanity_id: string;
-  course_certificate_validity_sanity_id: string;
-  course_mode: Array<"online" | "offline">;
+  slug: string; // unique among non-deleted courses, else 409 SLUG_TAKEN
+  theme_sanity_ids: string[]; // Sanity _id of each course theme
+  course_type_id: string; // MySQL UUIDs from GET /course/options
+  course_class_type_id: string;
+  course_certificate_validity_id: string;
   duration: string;
-  overview: unknown[];
-  objective: unknown[];
-  outline: unknown[];
-  requirement: unknown[];
-  related_course_sanity_ids: string[];
+  overview: PortableTextBlock[]; // blocks only
+  objective: PortableTextBlock[];
+  outline: PortableTextBlock[];
+  requirement: PortableTextBlock[];
+  related_course_ids: string[]; // course ids; must exist, not self
   recommended_for: Array<"fresh-graduate" | "experienced" | "student">;
+  has_assets: boolean; // true when the client will upload gallery/brochure
 };
 ```
 
-The backend validates every Sanity reference, creates the Sanity document, and inserts its MySQL mirror and theme relationships. Success — `201`:
+The backend validates every reference against MySQL, writes the Sanity document, then commits the MySQL row (`course`, `course_theme_detail`, `course_related`). A Sanity failure rolls MySQL back (`502 SANITY_UNAVAILABLE`).
+
+It also fills the Sanity fields the clients do not send:
+
+- `courseMode`: derived from the class type title. `Online` -> `["online"]`, `Offline` -> `["offline"]`, `Offline/Online` -> `["online", "offline"]`. The landing page reads this field.
+- `courseType`, `courseTypeCode`, `courseClassType`, `certificateValidity`: titles/code copied from the MySQL option rows (plain strings in Sanity, not references).
+
+`PUT` patches those fields only. It never touches `gallery` or `brochure`. Success: `POST` `201`, `PUT` `200`:
 
 ```ts
-{
-  course: {
-    id: string;
-    sanity_id: string;
-    title: string;
-    asset_status: "pending" | "ready";
-  }
-}
+{ course: { id: string; sanity_id: string; title: string; asset_status: "pending" | "ready" } }
 ```
 
-`asset_status` is `ready` when no course assets are expected; otherwise it remains `pending` until finalization.
+`asset_status` is `ready` when `has_assets` is false; otherwise `pending` until finalize.
 
-### PUT `/course?id={uuid}`
-
-Uses `CoursePayload` and updates the existing Sanity document, MySQL mirror, and theme relationships. File fields remain unchanged. Success — `200` with the same course shape as POST.
-
-### POST `/course/finalize?id={uuid}`
-
-Finalizes staged S3 assets. Omitting a property leaves that asset field unchanged during edit. Providing `gallery` replaces the complete gallery; providing `brochure` replaces or removes the brochure.
+### POST `/course/{id}/presign`
 
 ```ts
-type StagedAsset = {
-  s3_key: string;
-  original_filename: string;
-  content_type: string;
-  file_size: number;
-};
+{ files: Array<{ kind: "gallery" | "brochure"; content_type: string }> }
+```
 
-type CourseFinalizeRequest = {
-  gallery?: StagedAsset[]; // 0..6 JPEG/PNG files, each <= 1 MiB
-  brochure?: StagedAsset | null; // PDF <= 1 MiB; null removes it
+`gallery` accepts `image/jpeg` and `image/png` (max 6 files); `brochure` accepts `application/pdf` (max 1). Success `200`: `{ files: [{ s3_key, upload_url }], expires_in }`, same order as the request. Keys are `staging/course/{id}/{random}`. The client `PUT`s the bytes to `upload_url` with the same `Content-Type`.
+
+### POST `/course/{id}/finalize`
+
+```ts
+type FinalizeRequest = {
+  // Omit = unchanged. Present = the complete, ordered gallery.
+  gallery?: Array<{ key: string } | { s3_key: string }>; // key = keep existing item (alt/hotspot preserved)
+  // Omit = unchanged. null = remove.
+  brochure?: { s3_key: string } | null;
 };
 ```
 
-The backend performs S3 `HEAD`, streams each object from S3 to Sanity without buffering, patches the course, deletes replaced Sanity assets, marks the mirror `ready`, and immediately deletes successfully finalized S3 objects.
+For each new `s3_key` the backend checks the prefix, the S3 `HEAD` content type and size (<= 1 MiB), streams the object to Sanity, then patches the course in one mutation, deletes replaced Sanity assets (best effort) and the staged S3 objects, and sets `asset_status` to `ready`. At most 6 gallery items. Success `200`: same course shape as `POST`.
 
-The operation is idempotent for the same course and S3 keys. Success — `200`:
-
-```ts
-{
-  course: {
-    id: string;
-    sanity_id: string;
-    asset_status: "ready";
-  }
-}
-```
+Nothing changes in Sanity until the final patch, so a failed finalize can be retried with the same keys. Staged objects are deleted only after the patch succeeds.
 
 ## 10. Schedules
 

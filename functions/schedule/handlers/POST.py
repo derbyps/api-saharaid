@@ -14,7 +14,6 @@ def create_schedule_handler(event: dict) -> dict:
         "start_date",
         "end_date",
         "location",
-        "batch",
     ]
     for item in req_body:
         if item not in body:

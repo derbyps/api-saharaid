@@ -3,6 +3,7 @@ import os
 import traceback
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
+from urllib.parse import quote
 from typing import TYPE_CHECKING, Literal, Optional, Union, overload
 
 from botocore.exceptions import NoCredentialsError
@@ -17,15 +18,19 @@ def get_s3_signed_url(
     s3_client: "S3Client",
     object_key: str,
     ttl: timedelta,
+    download_filename: str | None = None,
 ) -> str | None:
     print("ssss", os.getenv("S3_BUCKET"))
+    params = {"Bucket": os.getenv("S3_BUCKET"), "Key": object_key}
+    if download_filename:
+        params["ResponseContentDisposition"] = (
+            f"attachment; filename*=UTF-8''{quote(download_filename)}"
+        )
+
     try:
         url = s3_client.generate_presigned_url(
             "get_object",
-            Params={
-                "Bucket": os.getenv("S3_BUCKET"),
-                "Key": object_key,
-            },
+            Params=params,
             ExpiresIn=int(ttl.total_seconds()),
         )
 

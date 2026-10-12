@@ -6,9 +6,14 @@ from functions.documents.schemas.document import DocumentMetadataRow
 class ScheduleRow(TypedDict):
     id: str
     serial_number: int
-    name: str
-    phone_number: str
-    email: str
+    course_name: str
+    batch: str
+    class_type: str | None
+    location: str
+    start_date: str
+    end_date: str
+    participant_count: int
+    created_at: str
 
 
 class GetSchedulesResult(TypedDict):

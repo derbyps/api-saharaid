@@ -17,6 +17,9 @@ class S3Manager:
     def head_object(self, **kwargs):
         return self.client.head_object(Bucket=self.bucket, **kwargs)
 
+    def get_object(self, **kwargs):
+        return self.client.get_object(Bucket=self.bucket, **kwargs)
+
     def delete_object(self, **kwargs):
         return self.client.delete_object(Bucket=self.bucket, **kwargs)
 

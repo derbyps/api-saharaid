@@ -39,7 +39,7 @@ class ScheduleService:
             end_date=body["end_date"],
             location=body["location"],
             serial_number=serial_number,
-            batch=body["batch"],
+            batch="1",
             created_at=config_module.TIMESTAMP,
             created_by=actor_id,
         )

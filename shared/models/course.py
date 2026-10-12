@@ -13,11 +13,9 @@ class Course(Base):
         primary_key=True,
         default=lambda: str(uuid_extensions.uuid7()),
     )
-    course_related_id: Mapped[str | None] = mapped_column(String)
     sanity_id: Mapped[str] = mapped_column(String)
     course_type_id: Mapped[str] = mapped_column(String)
     course_class_type_id: Mapped[str] = mapped_column(String)
-    course_theme_id: Mapped[str] = mapped_column(String)
     course_certificate_validity_id: Mapped[str] = mapped_column(
         String,
         nullable=False,
@@ -46,11 +44,9 @@ class Course(Base):
 
     def __init__(
         self,
-        course_related_id: str | None,
         sanity_id: str,
         course_type_id: str,
         course_class_type_id: str,
-        course_theme_id: str,
         course_certificate_validity_id: str,
         name: str,
         asset_status: str,
@@ -64,11 +60,8 @@ class Course(Base):
         deleted_by: str | None = None,
     ):
         self.sanity_id = sanity_id
-        self.course_related_id = course_related_id
-        self.sanity_id = sanity_id
         self.course_type_id = course_type_id
         self.course_class_type_id = course_class_type_id
-        self.course_theme_id = course_theme_id
         self.course_certificate_validity_id = course_certificate_validity_id
         self.name = name
         self.asset_status = asset_status

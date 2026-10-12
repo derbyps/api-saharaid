@@ -6,6 +6,8 @@ class GetSchedulesParams(TypedDict):
     p: NotRequired[int]
     rp: NotRequired[int]
     search: NotRequired[str]
+    sort_by: NotRequired[str]
+    order_by: NotRequired[str]
 
 
 class CreateScheduleBody(TypedDict):

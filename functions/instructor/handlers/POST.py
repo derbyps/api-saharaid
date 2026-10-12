@@ -32,4 +32,4 @@ def create_instructor_handler(event: dict) -> dict:
         "created_at": result.created_at,
     }
 
-    return util.return_response(201, dict(response))
+    return util.return_response(201, {"instructor": dict(response)})

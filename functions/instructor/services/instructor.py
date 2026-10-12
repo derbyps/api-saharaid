@@ -75,8 +75,16 @@ class InstructorService:
         for row in documents_row:
             url = None
             if row.get("s3_key"):
+                is_pdf = row["content_type"] == "application/pdf"
                 url = get_s3_signed_url(
-                    s3_client, row.get("s3_key") or "", timedelta(days=1)
+                    s3_client,
+                    row.get("s3_key") or "",
+                    timedelta(days=1),
+                    download_filename=(
+                        f"{instructor['name']} - {row['document_type']}.pdf"
+                        if is_pdf
+                        else None
+                    ),
                 )
 
             documents.append(

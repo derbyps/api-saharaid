@@ -143,6 +143,17 @@ class DocumentService:
         if not self._is_owner_valid(owner):
             raise NotFound("OWNER_NOT_FOUND", "Owner not found")
 
+        for item in files:
+            allowed = DOCUMENT_TYPES.get(item["document_type"])
+            content_type = item.get("content_type")
+
+            if not isinstance(content_type, str) or (
+                allowed is not None and content_type not in allowed
+            ):
+                raise BadRequest(
+                    "INVALID_DOCUMENT", "Document type or content type is invalid"
+                )
+
         self.repo.remove(removed_ids)
 
         documents = []
@@ -153,6 +164,7 @@ class DocumentService:
                     owner_type=owner["type"],
                     document_type=item["document_type"],
                     s3_key=item["s3_key"],
+                    content_type=item["content_type"],
                     created_by=config.USER_ID,
                     created_at=config.TIMESTAMP,
                 )

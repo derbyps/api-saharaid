@@ -222,6 +222,42 @@ functions:
           authorizer:
             name: cognito
 
+  course:
+    handler: functions/course/lambda_function.lambda_handler
+    timeout: 29
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+      SANITY_PROJECT_ID: ${env:SANITY_PROJECT_ID}
+      SANITY_DATASET: ${env:SANITY_DATASET}
+      SANITY_API_VERSION: ${env:SANITY_API_VERSION}
+      SANITY_TOKEN: ${env:SANITY_TOKEN}
+    package:
+      patterns:
+        - "functions/course/**"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    events:
+      - httpApi:
+          path: /course
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /course/{id}
+          method: put
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /course/{id}/presign
+          method: post
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /course/{id}/finalize
+          method: post
+          authorizer:
+            name: cognito
+
   statistic:
     handler: functions/statistic/lambda_function.lambda_handler
     package:

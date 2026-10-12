@@ -85,8 +85,10 @@ class CourseOptionService:
                 created_by=actor_id,
             )
             db.save(course_type)
+            db.commit()
 
             return {
+                "id": course_type.id,
                 "sanity_id": course_type.sanity_id,
                 "title": course_type.title,
                 "code": course_type.code,
@@ -102,7 +104,9 @@ class CourseOptionService:
                 created_by=actor_id,
             )
             db.save(course_class_type)
+            db.commit()
             return {
+                "id": course_class_type.id,
                 "sanity_id": course_class_type.sanity_id,
                 "title": course_class_type.title,
                 "synced_at": course_class_type.synced_at,
@@ -117,7 +121,9 @@ class CourseOptionService:
                 created_by=actor_id,
             )
             db.save(course_certificate_validity)
+            db.commit()
             return {
+                "id": course_certificate_validity.id,
                 "sanity_id": course_certificate_validity.sanity_id,
                 "title": course_certificate_validity.title,
                 "synced_at": course_certificate_validity.synced_at,

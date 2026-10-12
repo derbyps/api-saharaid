@@ -53,7 +53,7 @@ class InstructorRepository:
                 (
                     (cv_doc.owner_id == Instructor.id)
                     & (cv_doc.owner_type == "instructor")
-                    & (cv_doc.document_type == "cv")
+                    & (cv_doc.document_type == "curiculum_vitae")
                     & (cv_doc.is_deleted == False)
                 ),
             )
