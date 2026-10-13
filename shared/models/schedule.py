@@ -1,5 +1,14 @@
 import uuid_extensions
-from sqlalchemy import BigInteger, Boolean, DateTime, Identity, String, func, text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Identity,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.configs.db import Base, db
@@ -18,6 +27,7 @@ class Schedule(Base):
     start_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     end_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     location: Mapped[str] = mapped_column(String, nullable=False)
+    max_participants: Mapped[int | None] = mapped_column(Integer)
     serial_number: Mapped[int] = mapped_column(
         BigInteger, Identity(always=True), unique=True
     )
@@ -43,6 +53,7 @@ class Schedule(Base):
         batch: str,
         created_at: str,
         created_by: str,
+        max_participants: int | None = None,
         is_deleted: bool = False,
         updated_at: str | None = None,
         updated_by: str | None = None,
@@ -54,6 +65,7 @@ class Schedule(Base):
         self.start_date = start_date
         self.end_date = end_date
         self.location = location
+        self.max_participants = max_participants
         self.serial_number = serial_number
         self.batch = batch
         self.is_deleted = is_deleted

@@ -115,6 +115,8 @@ class ParticipantService:
                     document_type=row["document_type"],
                     s3_key=url,
                     content_type=row["content_type"],
+                    original_filename=row["original_filename"],
+                    last_modified_at=row["last_modified_at"],
                 )
             )
 

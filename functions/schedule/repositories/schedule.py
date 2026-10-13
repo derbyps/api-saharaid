@@ -45,6 +45,7 @@ class ScheduleRepository:
                 Schedule.start_date,
                 Schedule.end_date,
                 participant_count.label("participant_count"),
+                Schedule.max_participants,
                 Schedule.created_at,
             )
             .select_from(Schedule)

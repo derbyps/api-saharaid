@@ -43,9 +43,12 @@ def save_documents_handler(event: dict) -> dict:
     files = body.get("files")
     owner = body.get("owner")
     removed_ids = body.get("removed_ids") or []
+    actor_id = util.current_user_id(event)
 
     document_service = DocumentService()
-    document_service.save_documents(owner=owner, files=files, removed_ids=removed_ids)
+    document_service.save_documents(
+        owner=owner, files=files, removed_ids=removed_ids, actor_id=str(actor_id)
+    )
 
     return util.return_response(201, {})
 

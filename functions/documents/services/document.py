@@ -22,6 +22,7 @@ from ..schemas.event import (
 )
 
 MAX_FILE_SIZE = 1024 * 1024
+MAX_FILENAME_LENGTH = 255
 UPLOAD_URL_TTL_SECONDS = 15 * 60
 DOWNLOAD_URL_TTL_SECONDS = 60 * 60
 DOCUMENT_TYPES = {
@@ -67,6 +68,23 @@ class DocumentService:
         if file_size > MAX_FILE_SIZE:
             raise TooLarge("FILE_TOO_LARGE", "Each document must be at most 1 MiB")
 
+    @staticmethod
+    def _s3_key(owner: PresignedUploadOwner, document_type: str) -> str:
+        return f"docs/{owner['type']}/{owner['id']}/{document_type}"
+
+    @staticmethod
+    def _clean_filename(value) -> str:
+        """Keep the file name as uploaded; drop only path parts and control chars."""
+        if not isinstance(value, str):
+            raise BadRequest("INVALID_DOCUMENT", "original_filename is required")
+
+        name = re.split(r"[\\/]", value)[-1]
+        name = re.sub(r"[\x00-\x1f\x7f]", "", name).strip()
+        if not name:
+            raise BadRequest("INVALID_DOCUMENT", "original_filename is required")
+
+        return name[:MAX_FILENAME_LENGTH]
+
     def presign_upload(
         self, owner: PresignedUploadOwner, files: list[PresignedUploadFile]
     ) -> PresignUploadResult:
@@ -76,7 +94,7 @@ class DocumentService:
 
         uploads = []
         for item in files:
-            key = f"docs/{owner['type']}/{owner['id']}/{item['document_type']}"
+            key = self._s3_key(owner, item["document_type"])
 
             try:
                 url = self.s3_manager.generate_presigned_url(
@@ -138,10 +156,15 @@ class DocumentService:
         owner: PresignedUploadOwner,
         files: list[SaveDocumentFile],
         removed_ids: list[str],
+        actor_id: str,
     ) -> None:
 
         if not self._is_owner_valid(owner):
             raise NotFound("OWNER_NOT_FOUND", "Owner not found")
+
+        document_types = [item["document_type"] for item in files]
+        if len(set(document_types)) != len(document_types):
+            raise BadRequest("INVALID_FILES", "Send each document type only once")
 
         for item in files:
             allowed = DOCUMENT_TYPES.get(item["document_type"])
@@ -154,21 +177,53 @@ class DocumentService:
                     "INVALID_DOCUMENT", "Document type or content type is invalid"
                 )
 
-        self.repo.remove(removed_ids)
+            if item.get("s3_key") != self._s3_key(owner, item["document_type"]):
+                raise BadRequest(
+                    "INVALID_S3_KEY", "s3_key does not belong to this owner"
+                )
 
-        documents = []
+        # One active document per owner and type: a replacement updates that row
+        # (same id and created_at, new updated_at) instead of delete + insert.
+        existing = {
+            document.document_type: document
+            for document in self.repo.get_active_by_types(
+                owner["id"], owner["type"], document_types
+            )
+        }
+        replaced_ids = {document.id for document in existing.values()}
+        self.repo.remove(
+            owner["id"],
+            owner["type"],
+            [rid for rid in removed_ids if rid not in replaced_ids],
+        )
+
+        now = config.TIMESTAMP
+        new_documents = []
         for item in files:
-            documents.append(
+            filename = self._clean_filename(item.get("original_filename"))
+            document = existing.get(item["document_type"])
+
+            if document:
+                document.s3_key = item["s3_key"]
+                document.content_type = item["content_type"]
+                document.original_filename = filename
+                document.updated_at = now
+                document.updated_by = actor_id
+                continue
+
+            new_documents.append(
                 Document(
                     owner_id=owner["id"],
                     owner_type=owner["type"],
                     document_type=item["document_type"],
                     s3_key=item["s3_key"],
                     content_type=item["content_type"],
-                    created_by=config.USER_ID,
-                    created_at=config.TIMESTAMP,
+                    original_filename=filename,
+                    created_by=actor_id,
+                    created_at=now,
                 )
             )
 
-        db.session.bulk_save_objects(documents)
+        if new_documents:
+            db.session.bulk_save_objects(new_documents)
         db.session.commit()

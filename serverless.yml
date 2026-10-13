@@ -258,6 +258,25 @@ functions:
           authorizer:
             name: cognito
 
+  enrollment:
+    handler: functions/enrollment/lambda_function.lambda_handler
+    package:
+      patterns:
+        - "functions/enrollment/**"
+        - "!**/__pycache__/**"
+        - "!**/*.pyc"
+    events:
+      - httpApi:
+          path: /enrollment
+          method: get
+          authorizer:
+            name: cognito
+      - httpApi:
+          path: /enrollment
+          method: post
+          authorizer:
+            name: cognito
+
   statistic:
     handler: functions/statistic/lambda_function.lambda_handler
     package:

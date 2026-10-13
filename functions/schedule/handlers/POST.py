@@ -19,6 +19,14 @@ def create_schedule_handler(event: dict) -> dict:
         if item not in body:
             return util.return_response(422, {})
 
+    max_participants = body.get("max_participants")
+    if max_participants is not None and (
+        isinstance(max_participants, bool)
+        or not isinstance(max_participants, int)
+        or max_participants < 1
+    ):
+        return util.return_response(422, {})
+
     actor_id = util.current_user_id(event)
     service = ScheduleService()
     result = service.create(body, str(actor_id))

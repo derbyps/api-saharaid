@@ -181,7 +181,7 @@ type Participant = {
 type DocumentMetadata = {
   id: string;
   document_type: string;
-  original_filename: string;
+  original_filename: string | null;
   content_type: string;
   file_size: number;
   last_modified_at: string;
@@ -493,14 +493,21 @@ Records document rows after direct upload for `participant` or `instructor` owne
     {
       "document_type": string,
       "s3_key": string,
-      "content_type": string
+      "content_type": string,
+      "original_filename": string
     }
   ],
   "removed_ids": string[],
 }
 ```
 
-The service checks that the participant exists, deletes document rows matching `removed_ids`, inserts rows for `files`, and commits. Success — `201 {}`. It does not check that removal IDs belong to the owner, validate file metadata or S3 keys, inspect S3 objects, or delete S3 bytes. The current ORM stores `owner_id`, `owner_type`, `document_type`, and `s3_key`; it does not match the `documents` SQL migration, which requires `participant_id` and additional file metadata columns. Therefore a successful metadata write against that schema is not verified. Replacing a document using the same S3 key may also conflict with the unique key constraint.
+The service checks that the owner exists, then applies the request in one transaction:
+
+- Each `document_type` may appear once in `files`, `s3_key` must equal the presigned key `docs/{owner_type}/{owner_id}/{document_type}`, and `original_filename` is required. The backend keeps the name as uploaded and only drops path parts and control characters (at most 255 characters).
+- If the owner already has an active document of that type, the row is **updated in place**: it keeps its `id` and `created_at`, and `original_filename`, `content_type`, `updated_at` and `updated_by` change. Otherwise a new row is inserted. A `removed_ids` entry for a replaced document is therefore ignored.
+- The remaining `removed_ids` are deleted, but only rows that belong to the owner. S3 bytes are not deleted.
+
+Success — `201 {}`. The backend does not inspect S3 objects or file sizes. `original_filename` is a nullable column; rows written before it existed stay `null` and are not backfilled.
 
 ### POST `/files/presign-download`
 

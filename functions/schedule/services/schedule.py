@@ -38,6 +38,7 @@ class ScheduleService:
             start_date=body["start_date"],
             end_date=body["end_date"],
             location=body["location"],
+            max_participants=body.get("max_participants"),
             serial_number=serial_number,
             batch="1",
             created_at=config_module.TIMESTAMP,
@@ -60,6 +61,8 @@ class ScheduleService:
         schedule.end_date = body["end_date"]
         schedule.location = body["location"]
         schedule.batch = body["batch"]
+        if "max_participants" in body:
+            schedule.max_participants = body["max_participants"]
         schedule.updated_at = config_module.TIMESTAMP
         schedule.updated_by = actor_id
 

@@ -13,6 +13,7 @@ class ScheduleRow(TypedDict):
     start_date: str
     end_date: str
     participant_count: int
+    max_participants: int | None
     created_at: str
 
 

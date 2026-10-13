@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from shared.configs.db import db
 from shared.models.document import Document
@@ -18,6 +18,10 @@ class DocumentRepository:
                 Document.document_type,
                 Document.s3_key,
                 Document.content_type,
+                Document.original_filename,
+                func.coalesce(Document.updated_at, Document.created_at).label(
+                    "last_modified_at"
+                ),
             )
             .select_from(Document)
             .where(

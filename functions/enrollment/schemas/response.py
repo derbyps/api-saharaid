@@ -2,8 +2,6 @@ from typing import TypedDict
 
 from shared.schemas.response import Metadata
 
-from .enrollment import DetailEnrollmentRow
-
 
 class PaginatedEnrollmentsResponse(TypedDict):
     enrollments: list
@@ -11,4 +9,4 @@ class PaginatedEnrollmentsResponse(TypedDict):
 
 
 class CreateEnrollmentResponse(TypedDict):
-    enrollment: DetailEnrollmentRow
+    inserted: int

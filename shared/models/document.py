@@ -18,6 +18,7 @@ class Document(Base):
     document_type: Mapped[str] = mapped_column(String)
     s3_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     content_type: Mapped[str] = mapped_column(String, nullable=False)
+    original_filename: Mapped[str | None] = mapped_column(String(255))
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
@@ -42,12 +43,14 @@ class Document(Base):
         updated_by: str | None = None,
         deleted_at: str | None = None,
         deleted_by: str | None = None,
+        original_filename: str | None = None,
     ):
         self.owner_id = owner_id
         self.owner_type = owner_type
         self.document_type = document_type
         self.s3_key = s3_key
         self.content_type = content_type
+        self.original_filename = original_filename
         self.is_deleted = is_deleted
         self.created_at = created_at
         self.created_by = created_by

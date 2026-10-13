@@ -22,6 +22,7 @@ class SaveDocumentFile(TypedDict):
     s3_key: str
     document_type: str
     content_type: str
+    original_filename: str
 
 
 class PresignedUploadEventBody(TypedDict):

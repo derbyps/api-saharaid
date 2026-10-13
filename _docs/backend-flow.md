@@ -132,9 +132,11 @@ All eight participant document types are optional and limited to 1 MiB. `passpor
 
 ### 4.2 Edit participant and documents
 
-Profile changes use one participant update. The current document request accepts additions in `files` and removal IDs in `removed_ids`; the service applies both in one database commit.
+Profile changes use one participant update. The current document request accepts additions in `files` and removal IDs in `removed_ids`; the service applies both in one database commit. Replacing a document of the same type updates its row in place (same id and `created_at`, new `original_filename` and `updated_at`).
 
-The current removal query deletes document rows by ID without checking that they belong to the supplied owner. It does not delete S3 objects or create S3 cleanup records, so removed rows can leave objects in S3.
+Removal deletes only rows that belong to the supplied owner. It does not delete S3 objects or create S3 cleanup records, so removed rows can leave objects in S3.
+
+Document reads return `original_filename` (nullable for older rows) and `last_modified_at`, which is `coalesce(updated_at, created_at)`.
 
 ### 4.3 Bulk import
 

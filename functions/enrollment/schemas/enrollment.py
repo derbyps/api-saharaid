@@ -1,6 +1,4 @@
-from typing import NotRequired, TypedDict
-
-from functions.documents.schemas.document import DocumentMetadataRow
+from typing import TypedDict
 
 
 class EnrollmentRow(TypedDict):
@@ -20,5 +18,5 @@ class GetEnrollmentsResult(TypedDict):
     total_data: int
 
 
-class DetailEnrollmentRow(TypedDict):
-    id: str
+class CreateEnrollmentResult(TypedDict):
+    inserted: int
